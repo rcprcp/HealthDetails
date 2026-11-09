@@ -21,8 +21,9 @@ above the table. Every view renders a paginated table with the same fetched
 rows. The Steps chart is cumulative: steps accumulate on the left axis and
 calories on the right axis. The Sleep chart is a hypnogram-style step chart
 built from the per-minute `stages` array, so the line changes level when a
-deep, light, REM or awake phase starts or ends. The SpO2, HRV and Temperature
-charts overlay an overall-average line and a 5-period moving average.
+deep, light, REM or awake phase starts or ends. The Heartrate, SpO2, HRV and
+Temperature charts overlay an overall-average line and a 5-period moving
+average.
 
 The header shows the total `distance_km` for the active view when that view
 has a distance column (Steps and Totals), plus the latest `j2208.battery`
