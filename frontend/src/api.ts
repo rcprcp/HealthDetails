@@ -53,7 +53,7 @@ export function getMonitorStatus(signal?: AbortSignal): Promise<MonitorStatus> {
   return request<MonitorStatus>('/api/monitor', signal);
 }
 
-export function setMonitorInterval(value: '1m' | '2h'): Promise<MonitorStatus> {
+export function setMonitorInterval(value: 'stream' | '2h'): Promise<MonitorStatus> {
   return request<MonitorStatus>(
     `/api/monitor/interval?value=${encodeURIComponent(value)}`,
     undefined,

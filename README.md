@@ -28,11 +28,20 @@ The header shows the total `distance_km` for the Steps view, plus the latest
 `j2208.battery` percentage, immediately left of the schema badge. Battery
 refreshes every 60 seconds.
 
-The header also has **1 min** and **2 hr** monitor buttons. Selecting one
-schedules a Quarkus cron job and immediately invokes the collector stub. The
-real Python collector entrypoint lives in the separate collector project, so
-`CollectorService` currently logs the intended invocation instead of launching
-a process.
+The header has **Stream** and **2 hr** collector controls. **Stream** starts a
+long-running stream script and checks every minute that it is still running.
+**2 hr** stops the stream script, starts a separate batch script, and repeats
+the batch every two hours.
+
+The collector commands are configurable:
+
+- `healthdetails.collector.stream-command` — default `j2208-stream`
+- `healthdetails.collector.batch-command` — default `j2208-batch`
+- `healthdetails.collector.enabled` — default `false`
+
+With the collector disabled, `CollectorService` logs the intended start/kill
+operations and tracks simulated process state. Set it to `true` and provide the
+real commands once the collector project exposes stable entrypoints.
 
 ## Firmware default intervals
 
@@ -119,7 +128,7 @@ need an SPA fallback route.
 | `GET`  | `/api/views/{name}`      | Columns, rows, total count and chart spec        |
 | `GET`  | `/api/battery`           | Latest battery percentage, timestamp and mode    |
 | `GET`  | `/api/monitor`           | Current monitor interval and schedule status     |
-| `POST` | `/api/monitor/interval`  | Schedule the collector with `?value=1m` or `2h`  |
+| `POST` | `/api/monitor/interval`  | Select `?value=stream` or `?value=2h`             |
 | `GET`  | `/q/health`              | Quarkus/Agroal health check                      |
 
 Query parameters for `/api/views/{name}`:

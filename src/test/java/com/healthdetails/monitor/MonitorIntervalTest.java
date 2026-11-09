@@ -10,20 +10,21 @@ class MonitorIntervalTest {
 
     @Test
     void parsesApiAndEnumValues() {
-        assertEquals(MonitorInterval.ONE_MINUTE, MonitorInterval.fromValue("1m"));
+        assertEquals(MonitorInterval.STREAM, MonitorInterval.fromValue("stream"));
         assertEquals(MonitorInterval.TWO_HOURS, MonitorInterval.fromValue("2h"));
-        assertEquals(MonitorInterval.ONE_MINUTE, MonitorInterval.fromValue("ONE_MINUTE"));
+        assertEquals(MonitorInterval.STREAM, MonitorInterval.fromValue("STREAM"));
         assertEquals(MonitorInterval.TWO_HOURS, MonitorInterval.fromValue("two_hours"));
     }
 
     @Test
     void exposesCronExpressions() {
-        assertEquals("0 * * * * ?", MonitorInterval.ONE_MINUTE.cron());
+        assertEquals("0 * * * * ?", MonitorInterval.STREAM.cron());
         assertEquals("0 0 */2 * * ?", MonitorInterval.TWO_HOURS.cron());
     }
 
     @Test
     void rejectsUnknownIntervals() {
+        assertThrows(BadRequestException.class, () -> MonitorInterval.fromValue("1m"));
         assertThrows(BadRequestException.class, () -> MonitorInterval.fromValue("5m"));
         assertThrows(BadRequestException.class, () -> MonitorInterval.fromValue(null));
         assertThrows(BadRequestException.class, () -> MonitorInterval.fromValue(" "));

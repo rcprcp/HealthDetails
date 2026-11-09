@@ -28,7 +28,7 @@ export function App() {
   const [battery, setBattery] = useState<BatteryStatus | null>(null);
   const [headerStats, setHeaderStats] = useState<HeaderStats | null>(null);
   const [monitorStatus, setMonitorStatus] = useState<MonitorStatus | null>(null);
-  const [monitorPending, setMonitorPending] = useState<'1m' | '2h' | null>(null);
+  const [monitorPending, setMonitorPending] = useState<'stream' | '2h' | null>(null);
   const [monitorError, setMonitorError] = useState<string | null>(null);
   const location = useLocation();
   const isMobile = useMediaQuery('(max-width: 48em)');
@@ -78,7 +78,7 @@ export function App() {
     return () => controller.abort();
   }, []);
 
-  const changeMonitorInterval = async (value: '1m' | '2h') => {
+  const changeMonitorInterval = async (value: 'stream' | '2h') => {
     setMonitorPending(value);
     setMonitorError(null);
     try {
@@ -133,21 +133,24 @@ export function App() {
               className="monitor-label"
               title={monitorStatus?.message}
             >
-              Monitor interval
+              Monitor
             </Text>
-            <Tooltip label="Fetch and store J2208 data every 1 minute" withArrow>
+            <Tooltip label="Start the continuous stream collector" withArrow>
               <Button
                 size="compact-xs"
-                variant={monitorStatus?.interval === '1m' ? 'filled' : 'default'}
+                variant={monitorStatus?.interval === 'stream' ? 'filled' : 'default'}
                 color="teal"
-                loading={monitorPending === '1m'}
-                disabled={monitorPending !== null && monitorPending !== '1m'}
-                onClick={() => changeMonitorInterval('1m')}
+                loading={monitorPending === 'stream'}
+                disabled={monitorPending !== null && monitorPending !== 'stream'}
+                onClick={() => changeMonitorInterval('stream')}
               >
-                1 min
+                Stream
               </Button>
             </Tooltip>
-            <Tooltip label="Fetch and store J2208 data every 2 hours" withArrow>
+            <Tooltip
+              label="Stop streaming and run the batch collector every 2 hours"
+              withArrow
+            >
               <Button
                 size="compact-xs"
                 variant={monitorStatus?.interval === '2h' ? 'filled' : 'default'}

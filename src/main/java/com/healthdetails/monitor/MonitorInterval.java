@@ -3,7 +3,7 @@ package com.healthdetails.monitor;
 import jakarta.ws.rs.BadRequestException;
 
 public enum MonitorInterval {
-    ONE_MINUTE("1m", "1 minute", "0 * * * * ?"),
+    STREAM("stream", "Stream", "0 * * * * ?"),
     TWO_HOURS("2h", "2 hours", "0 0 */2 * * ?");
 
     private final String value;

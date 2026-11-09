@@ -39,21 +39,29 @@ public class MonitorService {
     public synchronized MonitorStatus setInterval(MonitorInterval newInterval) {
         scheduler.unscheduleJob(JOB_ID);
         interval = newInterval;
-        message = "Scheduled every " + newInterval.label();
 
         scheduler.newJob(JOB_ID)
                 .setCron(newInterval.cron())
-                .setTask(execution -> runCollector())
+                .setTask(execution -> apply(newInterval))
                 .schedule();
 
-        // Give the user immediate feedback, especially for the 2-hour option.
-        runCollector();
+        apply(newInterval);
         return status();
     }
 
-    private void runCollector() {
+    private void apply(MonitorInterval target) {
         lastRun = Instant.now();
-        message = "Collector invoked at " + lastRun;
-        collector.collect();
+
+        if (target == MonitorInterval.STREAM) {
+            collector.stopBatch();
+            collector.ensureStreamRunning();
+            message = collector.isStreamRunning()
+                    ? "Stream script is running"
+                    : "Stream start requested";
+            return;
+        }
+
+        collector.runBatch();
+        message = "Stream stopped; batch script started";
     }
 }
