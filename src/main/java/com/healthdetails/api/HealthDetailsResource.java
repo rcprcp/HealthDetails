@@ -84,6 +84,16 @@ public class HealthDetailsResource {
     }
 
     @GET
+    @Path("/live/snapshot")
+    public Response liveSnapshot() {
+        LiveSnapshot snapshot = schemaService.latestSnapshot();
+        if (snapshot == null) {
+            return Response.noContent().build();
+        }
+        return Response.ok(snapshot).build();
+    }
+
+    @GET
     @Path("/live/recent")
     public List<LiveReading> liveRecent(@QueryParam("limit") @DefaultValue("50") int limit) {
         return schemaService.recentLive(limit);

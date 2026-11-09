@@ -1,6 +1,7 @@
 import type {
   BatteryStatus,
   LiveReading,
+  LiveSnapshot,
   MonitorStatus,
   TableData,
   ViewSummary,
@@ -69,6 +70,23 @@ export function setMonitorInterval(value: 'stream' | '2h'): Promise<MonitorStatu
 
 export function getLiveRecent(limit = 50, signal?: AbortSignal): Promise<LiveReading[]> {
   return request<LiveReading[]>(`/api/live/recent?limit=${limit}`, signal);
+}
+
+export async function getLiveSnapshot(signal?: AbortSignal): Promise<LiveSnapshot | null> {
+  const response = await fetch('/api/live/snapshot', {
+    signal,
+    headers: { Accept: 'application/json' },
+  });
+
+  if (response.status === 204) {
+    return null;
+  }
+
+  if (!response.ok) {
+    throw new Error(`Could not load live snapshot (${response.status})`);
+  }
+
+  return (await response.json()) as LiveSnapshot;
 }
 
 export async function getLiveLatest(signal?: AbortSignal): Promise<LiveReading | null> {

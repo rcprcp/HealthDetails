@@ -140,6 +140,7 @@ need an SPA fallback route.
 | `GET`  | `/api/monitor`           | Current monitor interval and schedule status     |
 | `POST` | `/api/monitor/interval`  | Select `?value=stream` or `?value=2h`             |
 | `GET`  | `/api/live/latest`       | Latest `j2208.live` reading, or 204 when empty    |
+| `GET`  | `/api/live/snapshot`     | Latest non-zero value and timestamp per metric    |
 | `GET`  | `/api/live/recent`       | Recent `j2208.live` readings, newest first        |
 | `GET`  | `/api/live/stream`       | SSE stream of new live readings                  |
 | `GET`  | `/q/health`              | Quarkus/Agroal health check                      |

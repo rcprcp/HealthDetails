@@ -10,7 +10,7 @@ import {
   Text,
   Title,
 } from '@mantine/core';
-import { getLiveRecent } from '../api';
+import { getLiveRecent, getLiveSnapshot } from '../api';
 import { formatDateTime, formatElapsed } from '../format';
 import type { LiveReading } from '../types';
 
@@ -97,6 +97,30 @@ export function LivePage() {
       lastMessageAt.current = Date.now();
       setState('live');
     };
+
+    getLiveSnapshot(controller.signal)
+      .then((snapshot) => {
+        if (!mounted || !snapshot) {
+          return;
+        }
+        setMetrics((previous) => {
+          const seeded = { ...previous };
+          for (const metricKey of METRIC_KEYS) {
+            const metric = snapshot[metricKey];
+            if (!metric) {
+              continue;
+            }
+            const current = seeded[metricKey];
+            if (!current || Date.parse(metric.ts) >= Date.parse(current.ts)) {
+              seeded[metricKey] = { value: metric.value, ts: metric.ts };
+            }
+          }
+          return seeded;
+        });
+      })
+      .catch(() => {
+        // The cards fill in as soon as the stream delivers a non-zero reading.
+      });
 
     getLiveRecent(50, controller.signal)
       .then((recent) => {

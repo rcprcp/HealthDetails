@@ -3,6 +3,7 @@ package com.healthdetails.service;
 import com.healthdetails.api.BatteryStatus;
 import com.healthdetails.api.ColumnInfo;
 import com.healthdetails.api.LiveReading;
+import com.healthdetails.api.LiveSnapshot;
 import com.healthdetails.api.TableData;
 import com.healthdetails.catalog.TableCatalog;
 import com.healthdetails.catalog.TableDefinition;
@@ -118,6 +119,50 @@ public class SchemaService {
         } catch (SQLException e) {
             throw new IllegalStateException("Could not read " + live, e);
         }
+    }
+
+    public LiveSnapshot latestSnapshot() {
+        String live = SqlIdentifiers.quote(schema) + "." + SqlIdentifiers.quote("live");
+        String devices = SqlIdentifiers.quote(schema) + "." + SqlIdentifiers.quote("devices");
+        String sql = "SELECT device_id,"
+                + " max(ts) FILTER (WHERE hr <> 0) AS hr_ts,"
+                + " (array_agg(hr ORDER BY ts DESC) FILTER (WHERE hr <> 0))[1] AS hr,"
+                + " max(ts) FILTER (WHERE spo2 <> 0) AS spo2_ts,"
+                + " (array_agg(spo2 ORDER BY ts DESC) FILTER (WHERE spo2 <> 0))[1] AS spo2,"
+                + " max(ts) FILTER (WHERE bp_sys <> 0) AS bp_sys_ts,"
+                + " (array_agg(bp_sys ORDER BY ts DESC) FILTER (WHERE bp_sys <> 0))[1] AS bp_sys,"
+                + " max(ts) FILTER (WHERE bp_dia <> 0) AS bp_dia_ts,"
+                + " (array_agg(bp_dia ORDER BY ts DESC) FILTER (WHERE bp_dia <> 0))[1] AS bp_dia"
+                + " FROM " + live
+                + " WHERE device_id = (SELECT device_id FROM " + devices
+                + " ORDER BY last_seen DESC LIMIT 1)"
+                + " GROUP BY device_id";
+
+        try (Connection connection = dataSource.getConnection();
+             PreparedStatement statement = connection.prepareStatement(sql);
+             ResultSet resultSet = statement.executeQuery()) {
+            if (!resultSet.next()) {
+                return null;
+            }
+            return new LiveSnapshot(
+                    resultSet.getString("device_id"),
+                    metric(resultSet, "hr", "hr_ts"),
+                    metric(resultSet, "spo2", "spo2_ts"),
+                    metric(resultSet, "bp_sys", "bp_sys_ts"),
+                    metric(resultSet, "bp_dia", "bp_dia_ts"));
+        } catch (SQLException e) {
+            throw new IllegalStateException("Could not read " + live, e);
+        }
+    }
+
+    private static LiveSnapshot.MetricValue metric(ResultSet resultSet, String valueColumn, String tsColumn)
+            throws SQLException {
+        Integer value = nullableInt(resultSet, valueColumn);
+        if (value == null) {
+            return null;
+        }
+        return new LiveSnapshot.MetricValue(
+                value, resultSet.getObject(tsColumn, OffsetDateTime.class).toString());
     }
 
     public List<LiveReading> recentLive(int limit) {

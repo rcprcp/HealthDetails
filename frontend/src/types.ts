@@ -74,6 +74,19 @@ export interface LiveReading {
   bpDia: number | null;
 }
 
+export interface LiveMetricValue {
+  value: number;
+  ts: string;
+}
+
+export interface LiveSnapshot {
+  deviceId: string;
+  hr: LiveMetricValue | null;
+  spo2: LiveMetricValue | null;
+  bpSys: LiveMetricValue | null;
+  bpDia: LiveMetricValue | null;
+}
+
 export interface TableData {
   name: string;
   label: string;
