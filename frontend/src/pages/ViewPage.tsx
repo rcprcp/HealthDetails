@@ -5,6 +5,7 @@ import { getView } from '../api';
 import { buildChartPoints } from '../chart';
 import { DataTable } from '../components/DataTable';
 import { MetricChart } from '../components/MetricChart';
+import { PulsePressureChart } from '../components/PulsePressureChart';
 import type { HeaderStats, TableData } from '../types';
 
 interface ViewPageProps {
@@ -113,6 +114,9 @@ export function ViewPage({ onSummary }: ViewPageProps) {
 
       {data.chart ? (
         <MetricChart key={`chart-${data.name}`} data={data} points={chartPoints} />
+      ) : null}
+      {data.chart?.pulsePressure ? (
+        <PulsePressureChart key={`pulse-${data.name}`} points={chartPoints} />
       ) : null}
       <DataTable key={`table-${data.name}`} data={data} />
 

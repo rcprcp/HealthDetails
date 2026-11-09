@@ -20,8 +20,9 @@ project the useful fields:
 chart above the table. Every view renders a paginated table with the same
 fetched rows. The Blood Pressure chart plots systolic and diastolic in
 different colors, overlays an overall-average line for each, and its tooltip
-shows the pulse pressure (systolic − diastolic). Its table also exposes a
-`pulse_pressure` column. The Steps chart is cumulative: steps accumulate on the
+shows the pulse pressure (systolic − diastolic). A second bar chart below it
+plots pulse pressure from a 40 mmHg baseline, so bars extend above or below 40.
+Its table also exposes a `pulse_pressure` column. The Steps chart is cumulative: steps accumulate on the
 left axis and calories on the right axis. The Sleep chart is a hypnogram-style
 step chart built from the per-minute `stages` array, so the line changes level
 when a deep, light, REM or awake phase starts or ends. The Heartrate, SpO2, HRV
