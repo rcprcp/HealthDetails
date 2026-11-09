@@ -45,7 +45,8 @@ real commands once the collector project exposes stable entrypoints.
 
 Selecting **Stream** opens the live dashboard at `/#/live`. Quarkus polls
 `j2208.live` every 250 ms and pushes new readings to the browser over
-server-sent events. The dashboard shows heart rate, SpO2, systolic and
+server-sent events. While streaming is selected, the six history tabs are
+grayed out and disabled; selecting **2 hr** re-enables them. The dashboard shows heart rate, SpO2, systolic and
 diastolic pressure in large type, each with the timestamp of its value, plus a
 newest-first table of arriving readings with their age. A zero reading never
 replaces the last known value; the card keeps the previous number and its

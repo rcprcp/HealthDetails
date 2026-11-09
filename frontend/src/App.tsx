@@ -34,6 +34,7 @@ export function App() {
   const location = useLocation();
   const navigate = useNavigate();
   const isMobile = useMediaQuery('(max-width: 48em)');
+  const liveMode = monitorStatus?.interval === 'stream';
 
   useEffect(() => {
     const controller = new AbortController();
@@ -121,6 +122,19 @@ export function App() {
                   size="compact-sm"
                   variant={location.pathname === `/view/${view.name}` ? 'light' : 'subtle'}
                   color="teal"
+                  data-disabled={liveMode || undefined}
+                  aria-disabled={liveMode || undefined}
+                  tabIndex={liveMode ? -1 : undefined}
+                  title={
+                    liveMode
+                      ? 'Stop streaming with 2 hr to browse the history views'
+                      : undefined
+                  }
+                  onClick={(event) => {
+                    if (liveMode) {
+                      event.preventDefault();
+                    }
+                  }}
                 >
                   {view.label}
                 </Button>
