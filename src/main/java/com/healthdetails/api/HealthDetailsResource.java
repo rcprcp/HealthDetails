@@ -11,6 +11,7 @@ import jakarta.ws.rs.PathParam;
 import jakarta.ws.rs.Produces;
 import jakarta.ws.rs.QueryParam;
 import jakarta.ws.rs.core.MediaType;
+import jakarta.ws.rs.core.Response;
 
 import java.util.List;
 
@@ -37,6 +38,16 @@ public class HealthDetailsResource {
             @QueryParam("limit") @DefaultValue("5000") int limit,
             @QueryParam("offset") @DefaultValue("0") int offset) {
         return schemaService.fetch(name, limit, offset);
+    }
+
+    @GET
+    @Path("/battery")
+    public Response battery() {
+        BatteryStatus status = schemaService.latestBattery();
+        if (status == null) {
+            return Response.noContent().build();
+        }
+        return Response.ok(status).build();
     }
 
     public record ViewSummary(

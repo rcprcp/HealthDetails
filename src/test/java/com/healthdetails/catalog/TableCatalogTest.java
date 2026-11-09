@@ -8,7 +8,9 @@ import java.util.Set;
 import java.util.stream.Collectors;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 class TableCatalogTest {
 
@@ -42,6 +44,11 @@ class TableCatalogTest {
         TableDefinition spo2 = catalog.require("v_spo2");
         assertEquals("device_time", spo2.chart().xKey());
         assertEquals("percent", spo2.chart().yKey());
+
+        assertFalse(heartrate.chart().averageLine());
+        assertEquals(0, heartrate.chart().movingAveragePeriod());
+        assertTrue(spo2.chart().averageLine());
+        assertEquals(5, spo2.chart().movingAveragePeriod());
     }
 
     @Test

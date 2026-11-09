@@ -1,5 +1,6 @@
 package com.healthdetails.service;
 
+import com.healthdetails.api.BatteryStatus;
 import com.healthdetails.api.ColumnInfo;
 import com.healthdetails.api.TableData;
 import com.healthdetails.catalog.TableCatalog;
@@ -16,6 +17,7 @@ import java.sql.ResultSet;
 import java.sql.ResultSetMetaData;
 import java.sql.SQLException;
 import java.sql.Statement;
+import java.time.OffsetDateTime;
 import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.List;
@@ -72,6 +74,26 @@ public class SchemaService {
                             definition.chart());
                 }
             }
+        } catch (SQLException e) {
+            throw new IllegalStateException("Could not read " + relation, e);
+        }
+    }
+
+    public BatteryStatus latestBattery() {
+        String relation = SqlIdentifiers.quote(schema) + "." + SqlIdentifiers.quote("battery");
+        String sql = "SELECT device_id, ts, pct, mode FROM " + relation + " ORDER BY ts DESC LIMIT 1";
+
+        try (Connection connection = dataSource.getConnection();
+             PreparedStatement statement = connection.prepareStatement(sql);
+             ResultSet resultSet = statement.executeQuery()) {
+            if (!resultSet.next()) {
+                return null;
+            }
+            return new BatteryStatus(
+                    resultSet.getString("device_id"),
+                    resultSet.getInt("pct"),
+                    resultSet.getObject("ts", OffsetDateTime.class).toString(),
+                    resultSet.getString("mode"));
         } catch (SQLException e) {
             throw new IllegalStateException("Could not read " + relation, e);
         }

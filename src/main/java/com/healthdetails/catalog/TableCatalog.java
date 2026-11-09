@@ -23,7 +23,7 @@ public class TableCatalog {
                     "Heart-rate samples decoded from history.payload (type = 'hr').",
                     "device_time",
                     true,
-                    new ChartSpec("line", "device_time", "bpm", "Heart rate", "bpm", "red.6")),
+                    new ChartSpec("line", "device_time", "bpm", "Heart rate", "bpm", "red.6", false, 0)),
             new TableDefinition(
                     "v_spo2",
                     "SpO2",
@@ -31,7 +31,7 @@ public class TableCatalog {
                     "Blood-oxygen saturation samples decoded from history.payload (type = 'spo2_auto').",
                     "device_time",
                     true,
-                    new ChartSpec("line", "device_time", "percent", "SpO2", "%", "blue.6")),
+                    new ChartSpec("line", "device_time", "percent", "SpO2", "%", "blue.6", true, 5)),
             new TableDefinition(
                     "v_hrv",
                     "HRV",

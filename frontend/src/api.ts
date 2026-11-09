@@ -1,4 +1,4 @@
-import type { TableData, ViewSummary } from './types';
+import type { BatteryStatus, TableData, ViewSummary } from './types';
 
 async function request<T>(url: string, signal?: AbortSignal): Promise<T> {
   const response = await fetch(url, {
@@ -26,4 +26,21 @@ export function getViews(signal?: AbortSignal): Promise<ViewSummary[]> {
 
 export function getView(name: string, signal?: AbortSignal): Promise<TableData> {
   return request<TableData>(`/api/views/${encodeURIComponent(name)}?limit=5000`, signal);
+}
+
+export async function getBattery(signal?: AbortSignal): Promise<BatteryStatus | null> {
+  const response = await fetch('/api/battery', {
+    signal,
+    headers: { Accept: 'application/json' },
+  });
+
+  if (response.status === 204) {
+    return null;
+  }
+
+  if (!response.ok) {
+    throw new Error(`Could not load battery status (${response.status})`);
+  }
+
+  return (await response.json()) as BatteryStatus;
 }

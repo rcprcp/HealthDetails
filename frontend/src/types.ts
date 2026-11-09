@@ -7,6 +7,8 @@ export interface ChartSpec {
   label: string;
   unit: string;
   color: string;
+  averageLine: boolean;
+  movingAveragePeriod: number;
 }
 
 export interface ViewSummary {
@@ -21,6 +23,13 @@ export interface ColumnInfo {
   name: string;
   type: string;
   nullable: boolean;
+}
+
+export interface BatteryStatus {
+  deviceId: string;
+  percent: number;
+  ts: string;
+  mode: string;
 }
 
 export interface TableData {

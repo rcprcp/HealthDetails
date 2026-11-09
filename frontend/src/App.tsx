@@ -10,17 +10,21 @@ import {
   Loader,
   Text,
   Title,
+  Tooltip,
 } from '@mantine/core';
 import { useMediaQuery } from '@mantine/hooks';
 import { Link, Navigate, Route, Routes, useLocation } from 'react-router-dom';
-import { getViews } from './api';
+import { getBattery, getViews } from './api';
+import { BatteryIcon } from './components/BatteryIcon';
+import { formatDateTime } from './format';
 import { ViewPage } from './pages/ViewPage';
-import type { ViewSummary } from './types';
+import type { BatteryStatus, ViewSummary } from './types';
 
 export function App() {
   const [views, setViews] = useState<ViewSummary[]>([]);
   const [error, setError] = useState<string | null>(null);
   const [attempt, setAttempt] = useState(0);
+  const [battery, setBattery] = useState<BatteryStatus | null>(null);
   const location = useLocation();
   const isMobile = useMediaQuery('(max-width: 48em)');
 
@@ -39,6 +43,25 @@ export function App() {
 
     return () => controller.abort();
   }, [attempt]);
+
+  useEffect(() => {
+    const controller = new AbortController();
+    const loadBattery = () => {
+      getBattery(controller.signal)
+        .then(setBattery)
+        .catch(() => {
+          // Battery is decorative; keep the last known value on transient errors.
+        });
+    };
+
+    loadBattery();
+    const timer = setInterval(loadBattery, 60_000);
+
+    return () => {
+      clearInterval(timer);
+      controller.abort();
+    };
+  }, []);
 
   return (
     <AppShell header={{ height: isMobile ? 104 : 76 }} padding="lg">
@@ -75,9 +98,12 @@ export function App() {
             </Group>
           </nav>
 
-          <Badge variant="light" color="teal" visibleFrom="md" className="schema-badge">
-            schema <Code bg="transparent" c="teal">j2208</Code>
-          </Badge>
+          <Group gap="xs" wrap="nowrap" className="status-badges">
+            <BatteryBadge battery={battery} />
+            <Badge variant="light" color="teal" visibleFrom="md" className="schema-badge">
+              schema <Code bg="transparent" c="teal">j2208</Code>
+            </Badge>
+          </Group>
         </Group>
       </AppShell.Header>
 
@@ -104,5 +130,27 @@ export function App() {
         </Container>
       </AppShell.Main>
     </AppShell>
+  );
+}
+
+function BatteryBadge({ battery }: { battery: BatteryStatus | null }) {
+  if (!battery) {
+    return null;
+  }
+
+  const color = battery.percent <= 20 ? 'red' : battery.percent <= 50 ? 'yellow' : 'teal';
+  const tooltip = `Battery ${battery.percent}% · ${battery.mode} · ${formatDateTime(battery.ts)}`;
+
+  return (
+    <Tooltip label={tooltip} withArrow>
+      <Badge
+        variant="light"
+        color={color}
+        leftSection={<BatteryIcon percent={battery.percent} />}
+        className="battery-badge"
+      >
+        {battery.percent}%
+      </Badge>
+    </Tooltip>
   );
 }

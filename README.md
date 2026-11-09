@@ -17,7 +17,11 @@ project the useful fields:
 | `v_total`  | Totals       | daily steps, distance, calories, active minutes     |
 
 `v_hr` and `v_spo2` render a chart above the table. Every view renders a
-paginated table with the same fetched rows.
+paginated table with the same fetched rows. The SpO2 chart overlays an
+overall-average line and a 5-period moving average.
+
+The header shows the latest `j2208.battery` percentage to the left of the
+schema badge. It refreshes every 60 seconds.
 
 ## Requirements
 
@@ -91,6 +95,7 @@ need an SPA fallback route.
 | ------ | ------------------------ | ------------------------------------------------ |
 | `GET`  | `/api/views`             | Banner metadata for the seven views              |
 | `GET`  | `/api/views/{name}`      | Columns, rows, total count and chart spec        |
+| `GET`  | `/api/battery`           | Latest battery percentage, timestamp and mode    |
 | `GET`  | `/q/health`              | Quarkus/Agroal health check                      |
 
 Query parameters for `/api/views/{name}`:

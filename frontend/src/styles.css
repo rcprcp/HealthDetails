@@ -73,7 +73,12 @@ body {
   white-space: nowrap;
 }
 
-.schema-badge {
+.status-badges {
+  flex: 0 0 auto;
+}
+
+.schema-badge,
+.battery-badge {
   flex: 0 0 auto;
 }
 
