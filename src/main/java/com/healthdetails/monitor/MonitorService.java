@@ -42,18 +42,40 @@ public class MonitorService {
 
         scheduler.newJob(JOB_ID)
                 .setCron(newInterval.cron())
-                .setTask(execution -> apply(newInterval))
+                .setTask(execution -> tick(newInterval))
                 .schedule();
 
-        apply(newInterval);
+        switchTo(newInterval);
         return status();
     }
 
-    private void apply(MonitorInterval target) {
+    /**
+     * A mode was explicitly selected: stop both collectors before starting the
+     * requested one so no orphaned history or live process survives the switch.
+     */
+    private void switchTo(MonitorInterval target) {
         lastRun = Instant.now();
 
         if (target == MonitorInterval.STREAM) {
-            collector.stopBatch();
+            collector.startStreaming();
+            message = collector.isStreamRunning()
+                    ? "Stream script is running"
+                    : "Stream start requested";
+            return;
+        }
+
+        collector.runHistoryOnce();
+        message = "Stream stopped; history collection runs every 2 hours";
+    }
+
+    /**
+     * Periodic scheduler tick. Streaming only restarts the live collector when
+     * it is missing; the history mode starts the transient collector again.
+     */
+    private void tick(MonitorInterval target) {
+        lastRun = Instant.now();
+
+        if (target == MonitorInterval.STREAM) {
             collector.ensureStreamRunning();
             message = collector.isStreamRunning()
                     ? "Stream script is running"
@@ -61,7 +83,7 @@ public class MonitorService {
             return;
         }
 
-        collector.runBatch();
-        message = "Stream stopped; batch script started";
+        collector.runHistoryOnce();
+        message = "History collection runs every 2 hours";
     }
 }

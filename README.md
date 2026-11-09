@@ -33,20 +33,22 @@ The header shows the total `distance_km` for the Steps view, plus the latest
 `j2208.battery` percentage, immediately left of the schema badge. Battery
 refreshes every 60 seconds.
 
-The header has **Stream** and **2 hr** collector controls. **Stream** starts a
-long-running stream script and checks every minute that it is still running.
-**2 hr** stops the stream script, starts a separate batch script, and repeats
-the batch every two hours.
+The header has **Stream** and **2 hr** collector controls. **Stream** stops any
+running live or history collector (including child processes and orphans from
+earlier runs), then starts `j2208_collect_live.sh` as a long-running process.
+A one-minute watchdog restarts it only if it disappears. **2 hr** stops both
+collectors, starts one transient `j2208_collect_once.sh` history sync, and
+repeats that sync every two hours.
 
 The collector commands are configurable:
 
-- `healthdetails.collector.stream-command` — default `j2208-stream`
-- `healthdetails.collector.batch-command` — default `j2208-batch`
-- `healthdetails.collector.enabled` — default `false`
+- `healthdetails.collector.stream-command` — default `/home/bob/j2208-band-tools/tools/j2208_collect_live.sh`
+- `healthdetails.collector.batch-command` — default `/home/bob/j2208-band-tools/tools/j2208_collect_once.sh`
+- `healthdetails.collector.enabled` — default `true`
 
-With the collector disabled, `CollectorService` logs the intended start/kill
-operations and tracks simulated process state. Set it to `true` and provide the
-real commands once the collector project exposes stable entrypoints.
+Set `healthdetails.collector.enabled=false` to log the intended start/kill
+operations and track simulated process state instead of launching the scripts.
+The test profile disables the collector so tests never touch the band.
 
 Selecting **Stream** opens the live dashboard at `/#/live`. Quarkus polls
 `j2208.live` every 250 ms and pushes new readings to the browser over

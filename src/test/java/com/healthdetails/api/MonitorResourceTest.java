@@ -37,7 +37,7 @@ class MonitorResourceTest {
                 .body("label", is("2 hours"))
                 .body("cron", is("0 0 */2 * * ?"))
                 .body("active", is(true))
-                .body("message", is("Stream stopped; batch script started"))
+                .body("message", is("Stream stopped; history collection runs every 2 hours"))
                 .body("lastRun", notNullValue())
                 .body("nextRun", notNullValue());
     }
