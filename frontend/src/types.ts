@@ -26,6 +26,7 @@ export interface ChartSpec {
   cumulative: boolean;
   yMax: number | null;
   yMinPadding: number | null;
+  yPadding: number | null;
 }
 
 export interface ViewSummary {

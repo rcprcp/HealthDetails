@@ -235,10 +235,21 @@ export function MetricChart({ data, points }: MetricChartProps) {
       );
   const minimum = values.length > 0 ? Math.min(...values) : 0;
   const maximum = values.length > 0 ? Math.max(...values) : 0;
-  const padding = Math.max(2, Math.round((maximum - minimum) * 0.1));
+  const padding = chart.yPadding ?? Math.max(2, Math.round((maximum - minimum) * 0.1));
+  const paddingDecimals =
+    chart.yPadding == null ? 0 : (String(chart.yPadding).split('.')[1]?.length ?? 0);
+  const normalize = (value: number) => {
+    if (chart.yPadding == null) {
+      return value;
+    }
+    const factor = 10 ** paddingDecimals;
+    return Math.round(value * factor) / factor;
+  };
   const domainMin =
-    chart.yMinPadding != null ? Math.max(0, minimum - chart.yMinPadding) : minimum - padding;
-  const domainMax = chart.yMax != null ? chart.yMax : maximum + padding;
+    chart.yMinPadding != null
+      ? Math.max(0, minimum - chart.yMinPadding)
+      : normalize(minimum - padding);
+  const domainMax = chart.yMax != null ? chart.yMax : normalize(maximum + padding);
   const average =
     !isStageChart && singleSeries
       ? (displayPoints[0]?.[`${singleSeries.key}_average`] as number | undefined)
@@ -282,7 +293,13 @@ export function MetricChart({ data, points }: MetricChartProps) {
       }
     : hasRightAxis
       ? { width: 64 }
-      : { domain: [domainMin, domainMax], width: 48 };
+      : {
+          domain: [domainMin, domainMax],
+          width: 48,
+          ...(chart.yPadding != null
+            ? { tickFormatter: (value: number) => value.toFixed(paddingDecimals) }
+            : {}),
+        };
 
   const pointLabel = isStageChart ? 'stage-minutes' : 'points';
 

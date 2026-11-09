@@ -70,7 +70,8 @@ public class TableCatalog {
                             "device_time",
                             List.of(new ChartSeries("temp_c", "Temperature", "cyan.6", "°C")),
                             true,
-                            5)),
+                            5,
+                            0.2)),
             new TableDefinition(
                     "v_steps",
                     "Steps",

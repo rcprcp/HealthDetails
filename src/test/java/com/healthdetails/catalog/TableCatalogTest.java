@@ -60,6 +60,7 @@ class TableCatalogTest {
         assertEquals("temp_c", temperature.chart().series().getFirst().key());
         assertTrue(temperature.chart().averageLine());
         assertEquals(5, temperature.chart().movingAveragePeriod());
+        assertEquals(0.2, temperature.chart().yPadding(), 0.0001);
 
         TableDefinition steps = catalog.require("v_steps");
         assertEquals("line", steps.chart().type());

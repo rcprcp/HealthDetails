@@ -15,6 +15,7 @@ import java.util.List;
  * @param cumulative           accumulate each series over time
  * @param yMax                 optional hard maximum for the y-axis, or null
  * @param yMinPadding          optional padding below the lowest value, or null
+ * @param yPadding             optional symmetric padding above and below the data, or null
  */
 public record ChartSpec(
         String type,
@@ -26,7 +27,8 @@ public record ChartSpec(
         List<ChartStage> stages,
         boolean cumulative,
         Double yMax,
-        Integer yMinPadding
+        Integer yMinPadding,
+        Double yPadding
 ) {
     public ChartSpec {
         series = List.copyOf(series);
@@ -37,6 +39,9 @@ public record ChartSpec(
         if (yMinPadding != null && yMinPadding < 0) {
             throw new IllegalArgumentException("yMinPadding must be non-negative");
         }
+        if (yPadding != null && (!Double.isFinite(yPadding) || yPadding < 0)) {
+            throw new IllegalArgumentException("yPadding must be non-negative and finite");
+        }
     }
 
     public ChartSpec(
@@ -46,7 +51,7 @@ public record ChartSpec(
             boolean averageLine,
             int movingAveragePeriod) {
         this(type, xKey, series, averageLine, movingAveragePeriod, null, List.of(),
-                false, null, null);
+                false, null, null, null);
     }
 
     public ChartSpec(
@@ -58,7 +63,7 @@ public record ChartSpec(
             String stageKey,
             List<ChartStage> stages) {
         this(type, xKey, series, averageLine, movingAveragePeriod, stageKey, stages,
-                false, null, null);
+                false, null, null, null);
     }
 
     public ChartSpec(
@@ -71,7 +76,7 @@ public record ChartSpec(
             List<ChartStage> stages,
             boolean cumulative) {
         this(type, xKey, series, averageLine, movingAveragePeriod, stageKey, stages,
-                cumulative, null, null);
+                cumulative, null, null, null);
     }
 
     public ChartSpec(
@@ -84,6 +89,17 @@ public record ChartSpec(
             Double yMax,
             Integer yMinPadding) {
         this(type, xKey, series, averageLine, movingAveragePeriod, null, List.of(),
-                cumulative, yMax, yMinPadding);
+                cumulative, yMax, yMinPadding, null);
+    }
+
+    public ChartSpec(
+            String type,
+            String xKey,
+            List<ChartSeries> series,
+            boolean averageLine,
+            int movingAveragePeriod,
+            Double yPadding) {
+        this(type, xKey, series, averageLine, movingAveragePeriod, null, List.of(),
+                false, null, null, yPadding);
     }
 }
