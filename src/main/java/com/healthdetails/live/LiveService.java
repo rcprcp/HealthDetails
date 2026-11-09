@@ -2,12 +2,18 @@ package com.healthdetails.live;
 
 import com.healthdetails.api.LiveReading;
 import com.healthdetails.service.SchemaService;
-import io.quarkus.scheduler.Scheduled;
 import io.smallrye.mutiny.Multi;
 import io.smallrye.mutiny.operators.multi.processors.BroadcastProcessor;
+import jakarta.annotation.PostConstruct;
+import jakarta.annotation.PreDestroy;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
+import org.eclipse.microprofile.config.inject.ConfigProperty;
 import org.jboss.logging.Logger;
+
+import java.util.concurrent.Executors;
+import java.util.concurrent.ScheduledExecutorService;
+import java.util.concurrent.TimeUnit;
 
 @ApplicationScoped
 public class LiveService {
@@ -19,26 +25,55 @@ public class LiveService {
     @Inject
     SchemaService schemaService;
 
+    @ConfigProperty(name = "healthdetails.live.poll-ms", defaultValue = "250")
+    long pollMs;
+
+    private ScheduledExecutorService poller;
     private volatile String lastKey;
+    private volatile long lastErrorLogAt;
 
-    @Scheduled(every = "PT0.25S", concurrentExecution = Scheduled.ConcurrentExecution.SKIP)
-    void poll() {
-        try {
-            LiveReading reading = schemaService.latestLive();
-            if (reading == null) {
-                return;
-            }
+    @PostConstruct
+    void startPolling() {
+        poller = Executors.newSingleThreadScheduledExecutor(runnable -> {
+            Thread thread = new Thread(runnable, "j2208-live-poller");
+            thread.setDaemon(true);
+            return thread;
+        });
+        poller.scheduleWithFixedDelay(this::pollSafely, 0, pollMs, TimeUnit.MILLISECONDS);
+    }
 
-            String key = reading.deviceId() + "|" + reading.ts();
-            if (key.equals(lastKey)) {
-                return;
-            }
-
-            lastKey = key;
-            processor.onNext(reading);
-        } catch (RuntimeException e) {
-            LOG.warnf(e, "Could not poll j2208.live");
+    @PreDestroy
+    void stopPolling() {
+        if (poller != null) {
+            poller.shutdownNow();
         }
+    }
+
+    private void pollSafely() {
+        try {
+            poll();
+        } catch (RuntimeException e) {
+            long now = System.currentTimeMillis();
+            if (now - lastErrorLogAt > 30_000) {
+                lastErrorLogAt = now;
+                LOG.warnf(e, "Could not poll j2208.live");
+            }
+        }
+    }
+
+    void poll() {
+        LiveReading reading = schemaService.latestLive();
+        if (reading == null) {
+            return;
+        }
+
+        String key = reading.deviceId() + "|" + reading.ts();
+        if (key.equals(lastKey)) {
+            return;
+        }
+
+        lastKey = key;
+        processor.onNext(reading);
     }
 
     public Multi<LiveReading> stream() {
