@@ -1,41 +1,115 @@
-import { useEffect, useRef, useState } from 'react';
-import { Alert, Badge, Group, Paper, SimpleGrid, Stack, Text, Title } from '@mantine/core';
-import { getLiveLatest } from '../api';
-import { formatDateTime } from '../format';
+import { useCallback, useEffect, useRef, useState } from 'react';
+import {
+  Alert,
+  Badge,
+  Group,
+  Paper,
+  SimpleGrid,
+  Stack,
+  Table,
+  Text,
+  Title,
+} from '@mantine/core';
+import { getLiveRecent } from '../api';
+import { formatDateTime, formatElapsed } from '../format';
 import type { LiveReading } from '../types';
 
 type LiveState = 'connecting' | 'live' | 'stale' | 'waiting';
+type MetricKey = 'hr' | 'spo2' | 'bpSys' | 'bpDia';
 
-const STALE_AFTER_MS = 5_000;
+interface MetricSnapshot {
+  value: number;
+  ts: string;
+}
+
+type MetricSnapshots = Partial<Record<MetricKey, MetricSnapshot>>;
 
 interface Metric {
+  key: MetricKey;
   label: string;
   value: number | null | undefined;
+  ts: string | null | undefined;
   unit: string;
   color: string;
 }
 
+const STALE_AFTER_MS = 5_000;
+const MAX_ROWS = 100;
+const METRIC_KEYS: MetricKey[] = ['hr', 'spo2', 'bpSys', 'bpDia'];
+
+function readingKey(reading: LiveReading): string {
+  return `${reading.deviceId}|${reading.ts}`;
+}
+
+function hasValue(value: number | null | undefined): value is number {
+  return typeof value === 'number' && Number.isFinite(value) && value !== 0;
+}
+
 export function LivePage() {
-  const [reading, setReading] = useState<LiveReading | null>(null);
+  const [rows, setRows] = useState<LiveReading[]>([]);
+  const [metrics, setMetrics] = useState<MetricSnapshots>({});
   const [state, setState] = useState<LiveState>('connecting');
+  const [now, setNow] = useState(() => Date.now());
   const lastMessageAt = useRef(0);
+
+  const applyReading = useCallback((next: LiveReading) => {
+    setRows((previous) => {
+      const key = readingKey(next);
+      if (previous.some((row) => readingKey(row) === key)) {
+        return previous;
+      }
+      const merged = [next, ...previous];
+      merged.sort((left, right) => Date.parse(right.ts) - Date.parse(left.ts));
+      return merged.slice(0, MAX_ROWS);
+    });
+
+    setMetrics((previous) => {
+      const updated = { ...previous };
+      let changed = false;
+
+      for (const metricKey of METRIC_KEYS) {
+        const value = next[metricKey];
+        if (!hasValue(value)) {
+          continue;
+        }
+
+        const current = previous[metricKey];
+        if (current && Date.parse(current.ts) > Date.parse(next.ts)) {
+          continue;
+        }
+
+        if (!current || current.value !== value || current.ts !== next.ts) {
+          updated[metricKey] = { value, ts: next.ts };
+          changed = true;
+        }
+      }
+
+      return changed ? updated : previous;
+    });
+  }, []);
 
   useEffect(() => {
     const controller = new AbortController();
     let mounted = true;
 
-    getLiveLatest(controller.signal)
-      .then((latest) => {
+    const accept = (next: LiveReading) => {
+      applyReading(next);
+      lastMessageAt.current = Date.now();
+      setState('live');
+    };
+
+    getLiveRecent(50, controller.signal)
+      .then((recent) => {
         if (!mounted) {
           return;
         }
-        if (latest) {
-          setReading(latest);
-          lastMessageAt.current = Date.now();
-          setState('live');
-        } else {
+        if (recent.length === 0) {
           setState('waiting');
+          return;
         }
+        recent.forEach(applyReading);
+        const newest = recent[0];
+        setState(Date.now() - Date.parse(newest.ts) > STALE_AFTER_MS ? 'stale' : 'live');
       })
       .catch(() => {
         if (mounted) {
@@ -50,10 +124,7 @@ export function LivePage() {
         return;
       }
       try {
-        const next = JSON.parse(event.data) as LiveReading;
-        setReading(next);
-        lastMessageAt.current = Date.now();
-        setState('live');
+        accept(JSON.parse(event.data) as LiveReading);
       } catch {
         // Ignore malformed events and keep the last good reading.
       }
@@ -81,6 +152,11 @@ export function LivePage() {
       source.close();
       clearInterval(staleTimer);
     };
+  }, [applyReading]);
+
+  useEffect(() => {
+    const timer = setInterval(() => setNow(Date.now()), 1_000);
+    return () => clearInterval(timer);
   }, []);
 
   const statusColor =
@@ -94,12 +170,42 @@ export function LivePage() {
           ? 'Waiting for data'
           : 'Connecting';
 
-  const metrics: Metric[] = [
-    { label: 'Heart rate', value: reading?.hr, unit: 'bpm', color: 'red.7' },
-    { label: 'SpO2', value: reading?.spo2, unit: '%', color: 'blue.7' },
-    { label: 'Systolic', value: reading?.bpSys, unit: 'mmHg', color: 'grape.7' },
-    { label: 'Diastolic', value: reading?.bpDia, unit: 'mmHg', color: 'grape.7' },
+  const cards: Metric[] = [
+    {
+      key: 'hr',
+      label: 'Heart rate',
+      value: metrics.hr?.value,
+      ts: metrics.hr?.ts,
+      unit: 'bpm',
+      color: 'red.7',
+    },
+    {
+      key: 'spo2',
+      label: 'SpO2',
+      value: metrics.spo2?.value,
+      ts: metrics.spo2?.ts,
+      unit: '%',
+      color: 'blue.7',
+    },
+    {
+      key: 'bpSys',
+      label: 'Systolic',
+      value: metrics.bpSys?.value,
+      ts: metrics.bpSys?.ts,
+      unit: 'mmHg',
+      color: 'grape.7',
+    },
+    {
+      key: 'bpDia',
+      label: 'Diastolic',
+      value: metrics.bpDia?.value,
+      ts: metrics.bpDia?.ts,
+      unit: 'mmHg',
+      color: 'grape.7',
+    },
   ];
+
+  const latest = rows[0];
 
   return (
     <Stack gap="lg">
@@ -115,12 +221,12 @@ export function LivePage() {
             {statusLabel}
           </Badge>
           <Text size="sm" c="dimmed">
-            {reading ? formatDateTime(reading.ts) : 'No reading yet'}
+            {latest ? formatDateTime(latest.ts) : 'No reading yet'}
           </Text>
         </Group>
       </Group>
 
-      {!reading ? (
+      {rows.length === 0 ? (
         <Alert color="blue" title="Waiting for live data">
           Start the Stream collector to populate <code>j2208.live</code>. This page will
           update automatically when readings arrive.
@@ -128,31 +234,94 @@ export function LivePage() {
       ) : null}
 
       <SimpleGrid cols={{ base: 2, md: 4 }} spacing="lg">
-        {metrics.map((metric) => (
-          <Paper key={metric.label} withBorder p="xl" radius="md">
+        {cards.map((metric) => (
+          <Paper key={metric.key} withBorder p="xl" radius="md">
             <Text size="sm" c="dimmed" tt="uppercase" fw={600}>
               {metric.label}
             </Text>
             <Group align="baseline" gap={6} mt="sm" wrap="nowrap">
-              <Text
-                fw={800}
-                lh={1}
-                c={metric.color}
-                fz={{ base: 48, sm: 72, md: 88 }}
-              >
-                {metric.value ?? '—'}
+              <Text fw={800} lh={1} c={metric.color} fz={{ base: 48, sm: 72, md: 88 }}>
+                {hasValue(metric.value) ? metric.value : '—'}
               </Text>
               <Text size="sm" c="dimmed">
                 {metric.unit}
               </Text>
             </Group>
+            <Text size="sm" c="dimmed" mt={6}>
+              {metric.ts ? formatDateTime(metric.ts) : 'No value yet'}
+            </Text>
           </Paper>
         ))}
       </SimpleGrid>
 
+      <Paper withBorder radius="md">
+        <Group justify="space-between" align="center" p="md" gap="sm">
+          <Group gap="sm">
+            <Text fw={600}>Readings</Text>
+            <Badge variant="light" color="gray">
+              {rows.length}
+            </Badge>
+          </Group>
+          <Text size="xs" c="dimmed">
+            Newest first
+          </Text>
+        </Group>
+
+        <div className="table-scroll live-table-scroll">
+          <Table highlightOnHover verticalSpacing="xs" horizontalSpacing="md" fz="sm">
+            <Table.Thead>
+              <Table.Tr>
+                <Table.Th>Timestamp</Table.Th>
+                <Table.Th>HR</Table.Th>
+                <Table.Th>SpO2</Table.Th>
+                <Table.Th>BP sys</Table.Th>
+                <Table.Th>BP dia</Table.Th>
+                <Table.Th>Age</Table.Th>
+              </Table.Tr>
+            </Table.Thead>
+            <Table.Tbody>
+              {rows.length === 0 ? (
+                <Table.Tr>
+                  <Table.Td colSpan={6}>
+                    <Text c="dimmed" ta="center" py="lg">
+                      Waiting for live readings.
+                    </Text>
+                  </Table.Td>
+                </Table.Tr>
+              ) : (
+                rows.map((row) => (
+                  <Table.Tr key={readingKey(row)}>
+                    <Table.Td>
+                      <Text size="sm">{formatDateTime(row.ts)}</Text>
+                    </Table.Td>
+                    <Table.Td>
+                      <LiveCell value={row.hr} />
+                    </Table.Td>
+                    <Table.Td>
+                      <LiveCell value={row.spo2} />
+                    </Table.Td>
+                    <Table.Td>
+                      <LiveCell value={row.bpSys} />
+                    </Table.Td>
+                    <Table.Td>
+                      <LiveCell value={row.bpDia} />
+                    </Table.Td>
+                    <Table.Td>
+                      <Text size="sm" c="dimmed">
+                        {formatElapsed(row.ts, now)}
+                      </Text>
+                    </Table.Td>
+                  </Table.Tr>
+                ))
+              )}
+            </Table.Tbody>
+          </Table>
+        </div>
+      </Paper>
+
       <Group justify="space-between">
         <Text size="xs" c="dimmed">
-          Device: {reading?.deviceId ?? '—'}
+          Device: {latest?.deviceId ?? '—'}
         </Text>
         <Text size="xs" c="dimmed">
           {state === 'live'
@@ -163,5 +332,14 @@ export function LivePage() {
         </Text>
       </Group>
     </Stack>
+  );
+}
+
+function LiveCell({ value }: { value: number | null | undefined }) {
+  const present = hasValue(value);
+  return (
+    <Text size="sm" c={present ? undefined : 'dimmed'}>
+      {present ? value : '—'}
+    </Text>
   );
 }

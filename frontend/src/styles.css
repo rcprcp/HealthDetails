@@ -95,6 +95,18 @@ body {
   overflow-x: auto;
 }
 
+.live-table-scroll {
+  max-height: 480px;
+  overflow-y: auto;
+}
+
+.live-table-scroll thead th {
+  position: sticky;
+  top: 0;
+  z-index: 1;
+  background: light-dark(var(--mantine-color-white), var(--mantine-color-dark-7));
+}
+
 .column-header {
   white-space: nowrap;
 }

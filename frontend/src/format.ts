@@ -50,3 +50,31 @@ export function truncate(value: string, maxLength: number): string {
 export function formatDistance(km: number): string {
   return `${km.toLocaleString(undefined, { maximumFractionDigits: 2 })} km`;
 }
+
+export function formatElapsed(value: string, now: number): string {
+  const then = new Date(value).getTime();
+  if (Number.isNaN(then)) {
+    return '—';
+  }
+
+  const seconds = Math.max(0, Math.round((now - then) / 1000));
+  if (seconds < 1) {
+    return 'now';
+  }
+  if (seconds < 60) {
+    return `${seconds}s`;
+  }
+
+  const minutes = Math.floor(seconds / 60);
+  if (minutes < 60) {
+    return `${minutes}m ${seconds % 60}s`;
+  }
+
+  const hours = Math.floor(minutes / 60);
+  if (hours < 24) {
+    return `${hours}h ${minutes % 60}m`;
+  }
+
+  const days = Math.floor(hours / 24);
+  return `${days}d ${hours % 24}h`;
+}

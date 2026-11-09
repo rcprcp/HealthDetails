@@ -46,9 +46,12 @@ real commands once the collector project exposes stable entrypoints.
 Selecting **Stream** opens the live dashboard at `/#/live`. Quarkus polls
 `j2208.live` every 250 ms and pushes new readings to the browser over
 server-sent events. The dashboard shows heart rate, SpO2, systolic and
-diastolic pressure in large type, with `Live`, `Stale` and `Waiting for data`
-states. Selecting **2 hr** stops the stream collector, starts the batch
-collector, and returns to the view pages.
+diastolic pressure in large type, each with the timestamp of its value, plus a
+newest-first table of arriving readings with their age. A zero reading never
+replaces the last known value; the card keeps the previous number and its
+timestamp. `Live`, `Stale` and `Waiting for data` states show the stream health.
+Selecting **2 hr** stops the stream collector, starts the batch collector, and
+returns to the view pages.
 
 ## Firmware default intervals
 
@@ -137,6 +140,7 @@ need an SPA fallback route.
 | `GET`  | `/api/monitor`           | Current monitor interval and schedule status     |
 | `POST` | `/api/monitor/interval`  | Select `?value=stream` or `?value=2h`             |
 | `GET`  | `/api/live/latest`       | Latest `j2208.live` reading, or 204 when empty    |
+| `GET`  | `/api/live/recent`       | Recent `j2208.live` readings, newest first        |
 | `GET`  | `/api/live/stream`       | SSE stream of new live readings                  |
 | `GET`  | `/q/health`              | Quarkus/Agroal health check                      |
 

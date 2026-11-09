@@ -84,6 +84,12 @@ public class HealthDetailsResource {
     }
 
     @GET
+    @Path("/live/recent")
+    public List<LiveReading> liveRecent(@QueryParam("limit") @DefaultValue("50") int limit) {
+        return schemaService.recentLive(limit);
+    }
+
+    @GET
     @Path("/live/stream")
     @Produces(MediaType.SERVER_SENT_EVENTS)
     public Multi<LiveReading> liveStream() {

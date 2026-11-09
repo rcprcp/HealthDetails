@@ -67,6 +67,10 @@ export function setMonitorInterval(value: 'stream' | '2h'): Promise<MonitorStatu
   );
 }
 
+export function getLiveRecent(limit = 50, signal?: AbortSignal): Promise<LiveReading[]> {
+  return request<LiveReading[]>(`/api/live/recent?limit=${limit}`, signal);
+}
+
 export async function getLiveLatest(signal?: AbortSignal): Promise<LiveReading | null> {
   const response = await fetch('/api/live/latest', {
     signal,

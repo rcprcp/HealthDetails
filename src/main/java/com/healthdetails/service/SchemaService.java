@@ -114,16 +114,44 @@ public class SchemaService {
             if (!resultSet.next()) {
                 return null;
             }
-            return new LiveReading(
-                    resultSet.getString("device_id"),
-                    resultSet.getObject("ts", OffsetDateTime.class).toString(),
-                    nullableInt(resultSet, "hr"),
-                    nullableInt(resultSet, "spo2"),
-                    nullableInt(resultSet, "bp_sys"),
-                    nullableInt(resultSet, "bp_dia"));
+            return liveReading(resultSet);
         } catch (SQLException e) {
             throw new IllegalStateException("Could not read " + live, e);
         }
+    }
+
+    public List<LiveReading> recentLive(int limit) {
+        int safeLimit = Math.max(1, Math.min(limit, 500));
+        String live = SqlIdentifiers.quote(schema) + "." + SqlIdentifiers.quote("live");
+        String devices = SqlIdentifiers.quote(schema) + "." + SqlIdentifiers.quote("devices");
+        String sql = "SELECT device_id, ts, hr, spo2, bp_sys, bp_dia FROM " + live
+                + " WHERE device_id = (SELECT device_id FROM " + devices
+                + " ORDER BY last_seen DESC LIMIT 1)"
+                + " ORDER BY ts DESC LIMIT ?";
+
+        List<LiveReading> readings = new ArrayList<>();
+        try (Connection connection = dataSource.getConnection();
+             PreparedStatement statement = connection.prepareStatement(sql)) {
+            statement.setInt(1, safeLimit);
+            try (ResultSet resultSet = statement.executeQuery()) {
+                while (resultSet.next()) {
+                    readings.add(liveReading(resultSet));
+                }
+            }
+        } catch (SQLException e) {
+            throw new IllegalStateException("Could not read " + live, e);
+        }
+        return readings;
+    }
+
+    private static LiveReading liveReading(ResultSet resultSet) throws SQLException {
+        return new LiveReading(
+                resultSet.getString("device_id"),
+                resultSet.getObject("ts", OffsetDateTime.class).toString(),
+                nullableInt(resultSet, "hr"),
+                nullableInt(resultSet, "spo2"),
+                nullableInt(resultSet, "bp_sys"),
+                nullableInt(resultSet, "bp_dia"));
     }
 
     private static Integer nullableInt(ResultSet resultSet, String column) throws SQLException {
