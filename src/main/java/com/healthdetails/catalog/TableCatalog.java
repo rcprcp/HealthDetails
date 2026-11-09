@@ -106,9 +106,9 @@ public class TableCatalog {
                             0,
                             "stages",
                             List.of(
-                                    new ChartStage(1, "Deep", 1, "indigo.8"),
-                                    new ChartStage(2, "Light", 2, "cyan.5"),
-                                    new ChartStage(3, "REM", 3, "grape.6"),
+                                    new ChartStage(1, "Deep", 1, "purple.6"),
+                                    new ChartStage(2, "Light", 2, "blue.6"),
+                                    new ChartStage(3, "REM", 3, "green.6"),
                                     new ChartStage(5, "Awake", 4, "orange.6")))),
             new TableDefinition(
                     "v_total",

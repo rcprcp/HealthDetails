@@ -1,8 +1,18 @@
 import { LineChart } from '@mantine/charts';
-import { Badge, Group, Paper, Text, Title } from '@mantine/core';
+import { Badge, Box, Group, Paper, Text, Title } from '@mantine/core';
+import {
+  Bar,
+  BarChart as RechartsBarChart,
+  CartesianGrid,
+  Cell,
+  ResponsiveContainer,
+  Tooltip,
+  XAxis,
+  YAxis,
+} from 'recharts';
 import type { ChartPoint } from '../chart';
 import { formatAxisTime, formatDateTime } from '../format';
-import type { TableData } from '../types';
+import type { ChartSpec, TableData } from '../types';
 
 interface MetricChartProps {
   data: TableData;
@@ -16,11 +26,129 @@ interface Series {
   yAxisId?: 'left' | 'right';
 }
 
+interface StageDatum {
+  x: string;
+  base: number;
+  height: number;
+  stage: number;
+  stageLabel: string;
+}
+
+function stageColor(color: string): string {
+  const [name, shade = '6'] = color.split('.');
+  return `var(--mantine-color-${name}-${shade})`;
+}
+
 function numericValues(points: ChartPoint[], keys: string[]): number[] {
   return points.flatMap((point) =>
     keys
       .map((key) => point[key])
       .filter((value): value is number => typeof value === 'number'),
+  );
+}
+
+function SleepStageChart({ chart, points }: { chart: ChartSpec; points: ChartPoint[] }) {
+  const stages = [...chart.stages].sort((left, right) => left.level - right.level);
+  const stageByLevel = new Map(stages.map((stage) => [stage.level, stage]));
+  const data: StageDatum[] = points
+    .filter((point) => typeof point.stage === 'number')
+    .map((point) => {
+      const level = Number(point.stage);
+      return {
+        x: point.x,
+        base: level - 0.2,
+        height: 0.4,
+        stage: level,
+        stageLabel: String(point.stageLabel ?? stageByLevel.get(level)?.label ?? ''),
+      };
+    });
+
+  if (data.length === 0) {
+    return (
+      <Text c="dimmed" size="sm">
+        No stage data yet.
+      </Text>
+    );
+  }
+
+  const maxLevel = Math.max(...stages.map((stage) => stage.level), 1);
+  const tickInterval = Math.max(0, Math.ceil(data.length / 8) - 1);
+
+  return (
+    <>
+      <ResponsiveContainer width="100%" height={300}>
+        <RechartsBarChart
+          data={data}
+          margin={{ top: 8, right: 16, bottom: 8, left: 8 }}
+          barCategoryGap={0}
+          barGap={0}
+        >
+          <CartesianGrid strokeDasharray="3 3" vertical={false} />
+          <XAxis
+            dataKey="x"
+            interval={tickInterval}
+            angle={-25}
+            textAnchor="end"
+            height={56}
+            tickFormatter={(value: string) => formatAxisTime(value)}
+          />
+          <YAxis
+            type="number"
+            domain={[0.5, maxLevel + 0.5]}
+            ticks={stages.map((stage) => stage.level)}
+            width={64}
+            tickFormatter={(value: number) =>
+              stageByLevel.get(Number(value))?.label ?? ''
+            }
+          />
+          <Tooltip
+            content={({ active, payload, label }) => {
+              if (!active || !payload || payload.length === 0) {
+                return null;
+              }
+              const datum = payload[0].payload as StageDatum;
+              return (
+                <Paper withBorder p="xs" radius="sm" shadow="sm">
+                  <Text size="xs" c="dimmed">
+                    {formatDateTime(String(label))}
+                  </Text>
+                  <Text size="sm" fw={600}>
+                    {datum.stageLabel}
+                  </Text>
+                </Paper>
+              );
+            }}
+          />
+          <Bar
+            dataKey="base"
+            stackId="stage"
+            fill="transparent"
+            isAnimationActive={false}
+          />
+          <Bar dataKey="height" stackId="stage" isAnimationActive={false}>
+            {data.map((entry) => (
+              <Cell
+                key={`${entry.x}-${entry.stage}`}
+                fill={stageColor(stageByLevel.get(entry.stage)?.color ?? 'gray.6')}
+              />
+            ))}
+          </Bar>
+        </RechartsBarChart>
+      </ResponsiveContainer>
+
+      <Group gap="md" mt="sm" wrap="wrap">
+        {stages.map((stage) => (
+          <Group key={stage.code} gap={6} wrap="nowrap">
+            <Box
+              w={10}
+              h={10}
+              style={{ borderRadius: 2, backgroundColor: stageColor(stage.color) }}
+            />
+            <Text size="xs">{stage.label}</Text>
+          </Group>
+        ))}
+      </Group>
+    </>
   );
 }
 
@@ -149,38 +277,42 @@ export function MetricChart({ data, points }: MetricChartProps) {
         </Badge>
       </Group>
 
-      <LineChart
-        h={300}
-        data={points}
-        dataKey="x"
-        series={series}
-        curveType={chart.type === 'step' ? 'stepAfter' : 'linear'}
-        withDots={points.length <= 80}
-        withLegend={!isStageChart && series.length > 1}
-        connectNulls={!isStageChart}
-        yAxisProps={yAxisProps}
-        withRightYAxis={hasRightAxis}
-        yAxisLabel={yAxisLabel}
-        rightYAxisLabel={rightYAxisLabel}
-        rightYAxisProps={hasRightAxis ? { width: 64 } : undefined}
-        xAxisProps={{
-          minTickGap: 48,
-          angle: -25,
-          textAnchor: 'end',
-          height: 56,
-          tickFormatter: (value: string) => formatAxisTime(value),
-        }}
-        tooltipProps={{
-          labelFormatter: (value) => formatDateTime(String(value)),
-          formatter: (value) => {
-            if (isStageChart) {
-              const stage = chart.stages.find((item) => item.level === Number(value));
-              return stage?.label ?? String(value);
-            }
-            return value;
-          },
-        }}
-      />
+      {isStageChart ? (
+        <SleepStageChart chart={chart} points={points} />
+      ) : (
+        <LineChart
+          h={300}
+          data={points}
+          dataKey="x"
+          series={series}
+          curveType={chart.type === 'step' ? 'stepAfter' : 'linear'}
+          withDots={points.length <= 80}
+          withLegend={series.length > 1}
+          connectNulls
+          yAxisProps={yAxisProps}
+          withRightYAxis={hasRightAxis}
+          yAxisLabel={yAxisLabel}
+          rightYAxisLabel={rightYAxisLabel}
+          rightYAxisProps={hasRightAxis ? { width: 64 } : undefined}
+          xAxisProps={{
+            minTickGap: 48,
+            angle: -25,
+            textAnchor: 'end',
+            height: 56,
+            tickFormatter: (value: string) => formatAxisTime(value),
+          }}
+          tooltipProps={{
+            labelFormatter: (value) => formatDateTime(String(value)),
+            formatter: (value) => {
+              if (isStageChart) {
+                const stage = chart.stages.find((item) => item.level === Number(value));
+                return stage?.label ?? String(value);
+              }
+              return value;
+            },
+          }}
+        />
+      )}
     </Paper>
   );
 }
