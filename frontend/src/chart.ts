@@ -1,14 +1,23 @@
 import type { TableData } from './types';
 
-export interface ChartPoint {
+export type ChartPoint = {
   x: string;
-  value: number;
-  average?: number;
-  movingAverage?: number;
-}
+} & Record<string, string | number | undefined>;
 
 function round(value: number): number {
   return Math.round(value * 100) / 100;
+}
+
+function toNumber(value: unknown): number | undefined {
+  if (value === null || value === undefined || value === '') {
+    return undefined;
+  }
+  const parsed = Number(value);
+  return Number.isFinite(parsed) ? parsed : undefined;
+}
+
+function mean(values: number[]): number {
+  return round(values.reduce((sum, value) => sum + value, 0) / values.length);
 }
 
 export function buildChartPoints(data: TableData): ChartPoint[] {
@@ -18,36 +27,58 @@ export function buildChartPoints(data: TableData): ChartPoint[] {
   }
 
   const rawPoints = data.rows
-    .map((row) => ({
-      x: String(row[chart.xKey] ?? ''),
-      value: Number(row[chart.yKey]),
-    }))
-    .filter((point) => point.x !== '' && Number.isFinite(point.value))
+    .map((row) => {
+      const point: ChartPoint = { x: String(row[chart.xKey] ?? '') };
+
+      for (const series of chart.series) {
+        point[series.key] = toNumber(row[series.key]);
+      }
+
+      return point;
+    })
+    .filter(
+      (point) =>
+        point.x !== '' &&
+        chart.series.some((series) => typeof point[series.key] === 'number'),
+    )
     .sort((left, right) => left.x.localeCompare(right.x));
 
   if (rawPoints.length === 0) {
     return [];
   }
 
-  const overallAverage = chart.averageLine
-    ? rawPoints.reduce((sum, point) => sum + point.value, 0) / rawPoints.length
-    : undefined;
-  const period = chart.movingAveragePeriod;
+  const points = rawPoints.map((point) => ({ ...point }));
 
-  return rawPoints.map((point, index) => {
-    const enriched: ChartPoint = { ...point };
+  for (const series of chart.series) {
+    const values = rawPoints
+      .map((point) => point[series.key])
+      .filter((value): value is number => typeof value === 'number');
 
-    if (overallAverage !== undefined) {
-      enriched.average = round(overallAverage);
+    if (values.length === 0) {
+      continue;
     }
 
-    if (period > 1) {
-      const window = rawPoints.slice(Math.max(0, index - period + 1), index + 1);
-      enriched.movingAverage = round(
-        window.reduce((sum, item) => sum + item.value, 0) / window.length,
-      );
+    if (chart.averageLine) {
+      const average = mean(values);
+      for (const point of points) {
+        point[`${series.key}_average`] = average;
+      }
     }
 
-    return enriched;
-  });
+    if (chart.movingAveragePeriod > 1) {
+      const period = chart.movingAveragePeriod;
+      for (let index = 0; index < points.length; index += 1) {
+        const window = rawPoints
+          .slice(Math.max(0, index - period + 1), index + 1)
+          .map((point) => point[series.key])
+          .filter((value): value is number => typeof value === 'number');
+
+        if (window.length > 0) {
+          points[index][`${series.key}_movingAverage`] = mean(window);
+        }
+      }
+    }
+  }
+
+  return points;
 }

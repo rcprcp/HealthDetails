@@ -22,7 +22,14 @@ class ViewCatalogResourceTest {
                 .body("[0].chart", is(true))
                 .body("[1].name", is("v_spo2"))
                 .body("[1].chart", is(true))
-                .body("[2].chart", is(false));
+                .body("[2].name", is("v_hrv"))
+                .body("[2].chart", is(true))
+                .body("[3].name", is("v_temp"))
+                .body("[3].chart", is(true))
+                .body("[4].chart", is(false))
+                .body("[5].name", is("v_sleep"))
+                .body("[5].chart", is(true))
+                .body("[6].chart", is(false));
     }
 
     @Test

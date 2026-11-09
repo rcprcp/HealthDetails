@@ -15,6 +15,14 @@ interface Series {
   color: string;
 }
 
+function numericValues(points: ChartPoint[], keys: string[]): number[] {
+  return points.flatMap((point) =>
+    keys
+      .map((key) => point[key])
+      .filter((value): value is number => typeof value === 'number'),
+  );
+}
+
 export function MetricChart({ data, points }: MetricChartProps) {
   const chart = data.chart;
 
@@ -25,7 +33,7 @@ export function MetricChart({ data, points }: MetricChartProps) {
   if (points.length === 0) {
     return (
       <Paper withBorder p="lg" radius="md">
-        <Title order={4}>{chart.label} over time</Title>
+        <Title order={4}>{data.label} over time</Title>
         <Text c="dimmed" size="sm" mt="sm">
           No chartable data yet.
         </Text>
@@ -33,41 +41,68 @@ export function MetricChart({ data, points }: MetricChartProps) {
     );
   }
 
-  const values = points.map((point) => point.value);
+  const singleSeries = chart.series.length === 1 ? chart.series[0] : null;
+  const chartTitle = singleSeries
+    ? `${singleSeries.label} over time`
+    : `${data.label} over time`;
+  const units = [...new Set(chart.series.map((series) => series.unit).filter(Boolean))];
+  const unitLabel = units.length === 1 ? units[0] : '';
+  const badgeText = singleSeries
+    ? `${singleSeries.label} (${singleSeries.unit})`
+    : `${data.label}${unitLabel ? ` (${unitLabel})` : ''}`;
+  const badgeColor = singleSeries ? singleSeries.color.split('.')[0] : 'gray';
+
+  const values = numericValues(
+    points,
+    chart.series.map((series) => series.key),
+  );
   const minimum = Math.min(...values);
   const maximum = Math.max(...values);
   const padding = Math.max(2, Math.round((maximum - minimum) * 0.1));
-  const colorName = chart.color.split('.')[0];
-  const average = points[0]?.average;
+  const average = singleSeries
+    ? (points[0]?.[`${singleSeries.key}_average`] as number | undefined)
+    : undefined;
 
-  const series: Series[] = [
-    { name: 'value', label: `${chart.label} (${chart.unit})`, color: chart.color },
-  ];
+  const series: Series[] = chart.series.map((item) => ({
+    name: item.key,
+    label: item.unit ? `${item.label} (${item.unit})` : item.label,
+    color: item.color,
+  }));
 
   if (chart.averageLine) {
-    series.push({ name: 'average', label: 'Overall average', color: 'orange.6' });
+    for (const item of chart.series) {
+      series.push({
+        name: `${item.key}_average`,
+        label: `${item.label} overall average`,
+        color: 'orange.6',
+      });
+    }
   }
 
   if (chart.movingAveragePeriod > 1) {
-    series.push({
-      name: 'movingAverage',
-      label: `${chart.movingAveragePeriod}-period moving average`,
-      color: 'grape.6',
-    });
+    for (const item of chart.series) {
+      series.push({
+        name: `${item.key}_movingAverage`,
+        label: `${item.label} ${chart.movingAveragePeriod}-period moving average`,
+        color: 'grape.6',
+      });
+    }
   }
 
   return (
     <Paper withBorder p="lg" radius="md">
       <Group justify="space-between" align="flex-start" mb="md" gap="sm">
         <div>
-          <Title order={4}>{chart.label} over time</Title>
+          <Title order={4}>{chartTitle}</Title>
           <Text size="xs" c="dimmed">
             {points.length.toLocaleString()} points from {data.name}, oldest to newest
-            {average !== undefined ? ` · overall average ${average}${chart.unit}` : ''}
+            {average !== undefined
+              ? ` · overall average ${average}${singleSeries?.unit ?? ''}`
+              : ''}
           </Text>
         </div>
-        <Badge variant="light" color={colorName}>
-          {chart.label} ({chart.unit})
+        <Badge variant="light" color={badgeColor}>
+          {badgeText}
         </Badge>
       </Group>
 

@@ -23,7 +23,12 @@ public class TableCatalog {
                     "Heart-rate samples decoded from history.payload (type = 'hr').",
                     "device_time",
                     true,
-                    new ChartSpec("line", "device_time", "bpm", "Heart rate", "bpm", "red.6", false, 0)),
+                    new ChartSpec(
+                            "line",
+                            "device_time",
+                            List.of(new ChartSeries("bpm", "Heart rate", "red.6", "bpm")),
+                            false,
+                            0)),
             new TableDefinition(
                     "v_spo2",
                     "SpO2",
@@ -31,7 +36,12 @@ public class TableCatalog {
                     "Blood-oxygen saturation samples decoded from history.payload (type = 'spo2_auto').",
                     "device_time",
                     true,
-                    new ChartSpec("line", "device_time", "percent", "SpO2", "%", "blue.6", true, 5)),
+                    new ChartSpec(
+                            "line",
+                            "device_time",
+                            List.of(new ChartSeries("percent", "SpO2", "blue.6", "%")),
+                            true,
+                            5)),
             new TableDefinition(
                     "v_hrv",
                     "HRV",
@@ -39,7 +49,12 @@ public class TableCatalog {
                     "HRV, stress and blood-pressure readings decoded from history.payload (type = 'hrv').",
                     "device_time",
                     true,
-                    null),
+                    new ChartSpec(
+                            "line",
+                            "device_time",
+                            List.of(new ChartSeries("hrv", "HRV", "teal.6", "ms")),
+                            true,
+                            5)),
             new TableDefinition(
                     "v_temp",
                     "Temperature",
@@ -47,7 +62,12 @@ public class TableCatalog {
                     "Axillary temperature samples decoded from history.payload (type = 'temp_axil').",
                     "device_time",
                     true,
-                    null),
+                    new ChartSpec(
+                            "line",
+                            "device_time",
+                            List.of(new ChartSeries("temp_c", "Temperature", "cyan.6", "°C")),
+                            true,
+                            5)),
             new TableDefinition(
                     "v_steps",
                     "Steps",
@@ -63,7 +83,16 @@ public class TableCatalog {
                     "Sleep-stage totals and stage series decoded from history.payload (type = 'sleep').",
                     "device_time",
                     true,
-                    null),
+                    new ChartSpec(
+                            "line",
+                            "device_time",
+                            List.of(
+                                    new ChartSeries("deep_min", "Deep", "indigo.8", "min"),
+                                    new ChartSeries("light_min", "Light", "cyan.5", "min"),
+                                    new ChartSeries("rem_min", "REM", "grape.6", "min"),
+                                    new ChartSeries("awake_min", "Awake", "orange.6", "min")),
+                            false,
+                            0)),
             new TableDefinition(
                     "v_total",
                     "Totals",

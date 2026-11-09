@@ -26,24 +26,44 @@ class TableCatalogTest {
     }
 
     @Test
-    void onlyHeartrateAndSpo2HaveCharts() {
+    void heartrateSpo2HrvTemperatureAndSleepHaveCharts() {
         Set<String> charted = catalog.all().stream()
                 .filter(TableDefinition::hasChart)
                 .map(TableDefinition::name)
                 .collect(Collectors.toSet());
 
-        assertEquals(Set.of("v_hr", "v_spo2"), charted);
+        assertEquals(Set.of("v_hr", "v_spo2", "v_hrv", "v_temp", "v_sleep"), charted);
     }
 
     @Test
     void chartKeysPointAtTheProjectedColumns() {
         TableDefinition heartrate = catalog.require("v_hr");
         assertEquals("device_time", heartrate.chart().xKey());
-        assertEquals("bpm", heartrate.chart().yKey());
+        assertEquals("bpm", heartrate.chart().series().getFirst().key());
 
         TableDefinition spo2 = catalog.require("v_spo2");
         assertEquals("device_time", spo2.chart().xKey());
-        assertEquals("percent", spo2.chart().yKey());
+        assertEquals("percent", spo2.chart().series().getFirst().key());
+
+        TableDefinition hrv = catalog.require("v_hrv");
+        assertEquals("device_time", hrv.chart().xKey());
+        assertEquals("hrv", hrv.chart().series().getFirst().key());
+        assertTrue(hrv.chart().averageLine());
+        assertEquals(5, hrv.chart().movingAveragePeriod());
+
+        TableDefinition temperature = catalog.require("v_temp");
+        assertEquals("device_time", temperature.chart().xKey());
+        assertEquals("temp_c", temperature.chart().series().getFirst().key());
+        assertTrue(temperature.chart().averageLine());
+        assertEquals(5, temperature.chart().movingAveragePeriod());
+
+        TableDefinition sleep = catalog.require("v_sleep");
+        assertEquals("device_time", sleep.chart().xKey());
+        assertEquals(
+                List.of("deep_min", "light_min", "rem_min", "awake_min"),
+                sleep.chart().series().stream().map(ChartSeries::key).toList());
+        assertFalse(sleep.chart().averageLine());
+        assertEquals(0, sleep.chart().movingAveragePeriod());
 
         assertFalse(heartrate.chart().averageLine());
         assertEquals(0, heartrate.chart().movingAveragePeriod());

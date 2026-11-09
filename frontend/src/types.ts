@@ -1,12 +1,16 @@
 export type ViewKind = 'view' | 'table';
 
+export interface ChartSeries {
+  key: string;
+  label: string;
+  color: string;
+  unit: string;
+}
+
 export interface ChartSpec {
   type: 'line';
   xKey: string;
-  yKey: string;
-  label: string;
-  unit: string;
-  color: string;
+  series: ChartSeries[];
   averageLine: boolean;
   movingAveragePeriod: number;
 }
