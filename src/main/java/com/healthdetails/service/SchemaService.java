@@ -2,6 +2,7 @@ package com.healthdetails.service;
 
 import com.healthdetails.api.BatteryStatus;
 import com.healthdetails.api.ColumnInfo;
+import com.healthdetails.api.LiveReading;
 import com.healthdetails.api.TableData;
 import com.healthdetails.catalog.TableCatalog;
 import com.healthdetails.catalog.TableDefinition;
@@ -97,6 +98,37 @@ public class SchemaService {
         } catch (SQLException e) {
             throw new IllegalStateException("Could not read " + relation, e);
         }
+    }
+
+    public LiveReading latestLive() {
+        String live = SqlIdentifiers.quote(schema) + "." + SqlIdentifiers.quote("live");
+        String devices = SqlIdentifiers.quote(schema) + "." + SqlIdentifiers.quote("devices");
+        String sql = "SELECT device_id, ts, hr, spo2, bp_sys, bp_dia FROM " + live
+                + " WHERE device_id = (SELECT device_id FROM " + devices
+                + " ORDER BY last_seen DESC LIMIT 1)"
+                + " ORDER BY ts DESC LIMIT 1";
+
+        try (Connection connection = dataSource.getConnection();
+             PreparedStatement statement = connection.prepareStatement(sql);
+             ResultSet resultSet = statement.executeQuery()) {
+            if (!resultSet.next()) {
+                return null;
+            }
+            return new LiveReading(
+                    resultSet.getString("device_id"),
+                    resultSet.getObject("ts", OffsetDateTime.class).toString(),
+                    nullableInt(resultSet, "hr"),
+                    nullableInt(resultSet, "spo2"),
+                    nullableInt(resultSet, "bp_sys"),
+                    nullableInt(resultSet, "bp_dia"));
+        } catch (SQLException e) {
+            throw new IllegalStateException("Could not read " + live, e);
+        }
+    }
+
+    private static Integer nullableInt(ResultSet resultSet, String column) throws SQLException {
+        Object value = resultSet.getObject(column);
+        return value == null ? null : ((Number) value).intValue();
     }
 
     private static long count(Connection connection, String relation) throws SQLException {

@@ -65,6 +65,15 @@ export interface MonitorStatus {
   message: string;
 }
 
+export interface LiveReading {
+  deviceId: string;
+  ts: string;
+  hr: number | null;
+  spo2: number | null;
+  bpSys: number | null;
+  bpDia: number | null;
+}
+
 export interface TableData {
   name: string;
   label: string;

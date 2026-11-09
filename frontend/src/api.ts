@@ -1,4 +1,10 @@
-import type { BatteryStatus, MonitorStatus, TableData, ViewSummary } from './types';
+import type {
+  BatteryStatus,
+  LiveReading,
+  MonitorStatus,
+  TableData,
+  ViewSummary,
+} from './types';
 
 async function request<T>(url: string, signal?: AbortSignal, init?: RequestInit): Promise<T> {
   const response = await fetch(url, {
@@ -59,4 +65,21 @@ export function setMonitorInterval(value: 'stream' | '2h'): Promise<MonitorStatu
     undefined,
     { method: 'POST' },
   );
+}
+
+export async function getLiveLatest(signal?: AbortSignal): Promise<LiveReading | null> {
+  const response = await fetch('/api/live/latest', {
+    signal,
+    headers: { Accept: 'application/json' },
+  });
+
+  if (response.status === 204) {
+    return null;
+  }
+
+  if (!response.ok) {
+    throw new Error(`Could not load live reading (${response.status})`);
+  }
+
+  return (await response.json()) as LiveReading;
 }

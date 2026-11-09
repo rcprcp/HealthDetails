@@ -2,9 +2,11 @@ package com.healthdetails.api;
 
 import com.healthdetails.catalog.TableCatalog;
 import com.healthdetails.catalog.TableDefinition;
+import com.healthdetails.live.LiveService;
 import com.healthdetails.monitor.MonitorInterval;
 import com.healthdetails.monitor.MonitorService;
 import com.healthdetails.service.SchemaService;
+import io.smallrye.mutiny.Multi;
 import jakarta.inject.Inject;
 import jakarta.ws.rs.DefaultValue;
 import jakarta.ws.rs.GET;
@@ -30,6 +32,9 @@ public class HealthDetailsResource {
 
     @Inject
     MonitorService monitorService;
+
+    @Inject
+    LiveService liveService;
 
     @GET
     @Path("/views")
@@ -66,6 +71,23 @@ public class HealthDetailsResource {
     @Path("/monitor/interval")
     public MonitorStatus setMonitorInterval(@QueryParam("value") String value) {
         return monitorService.setInterval(MonitorInterval.fromValue(value));
+    }
+
+    @GET
+    @Path("/live/latest")
+    public Response liveLatest() {
+        LiveReading reading = liveService.latest();
+        if (reading == null) {
+            return Response.noContent().build();
+        }
+        return Response.ok(reading).build();
+    }
+
+    @GET
+    @Path("/live/stream")
+    @Produces(MediaType.SERVER_SENT_EVENTS)
+    public Multi<LiveReading> liveStream() {
+        return liveService.stream();
     }
 
     public record ViewSummary(

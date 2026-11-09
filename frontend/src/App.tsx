@@ -13,11 +13,12 @@ import {
   Tooltip,
 } from '@mantine/core';
 import { useMediaQuery } from '@mantine/hooks';
-import { Link, Navigate, Route, Routes, useLocation } from 'react-router-dom';
+import { Link, Navigate, Route, Routes, useLocation, useNavigate } from 'react-router-dom';
 import { getBattery, getMonitorStatus, getViews, setMonitorInterval } from './api';
 import { BatteryIcon } from './components/BatteryIcon';
 import { DistanceIcon } from './components/DistanceIcon';
 import { formatDateTime, formatDistance } from './format';
+import { LivePage } from './pages/LivePage';
 import { ViewPage } from './pages/ViewPage';
 import type { BatteryStatus, HeaderStats, MonitorStatus, ViewSummary } from './types';
 
@@ -31,6 +32,7 @@ export function App() {
   const [monitorPending, setMonitorPending] = useState<'stream' | '2h' | null>(null);
   const [monitorError, setMonitorError] = useState<string | null>(null);
   const location = useLocation();
+  const navigate = useNavigate();
   const isMobile = useMediaQuery('(max-width: 48em)');
 
   useEffect(() => {
@@ -83,6 +85,7 @@ export function App() {
     setMonitorError(null);
     try {
       setMonitorStatus(await setMonitorInterval(value));
+      navigate(value === 'stream' ? '/live' : '/view/v_steps');
     } catch (cause: unknown) {
       setMonitorError(cause instanceof Error ? cause.message : String(cause));
     } finally {
@@ -196,6 +199,7 @@ export function App() {
             <Routes>
               <Route path="/" element={<Navigate to="/view/v_hr" replace />} />
               <Route path="/view/:name" element={<ViewPage onSummary={setHeaderStats} />} />
+              <Route path="/live" element={<LivePage />} />
               <Route path="*" element={<Navigate to="/view/v_hr" replace />} />
             </Routes>
           )}

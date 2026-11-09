@@ -43,6 +43,13 @@ With the collector disabled, `CollectorService` logs the intended start/kill
 operations and tracks simulated process state. Set it to `true` and provide the
 real commands once the collector project exposes stable entrypoints.
 
+Selecting **Stream** opens the live dashboard at `/#/live`. Quarkus polls
+`j2208.live` every 250 ms and pushes new readings to the browser over
+server-sent events. The dashboard shows heart rate, SpO2, systolic and
+diastolic pressure in large type, with `Live`, `Stale` and `Waiting for data`
+states. Selecting **2 hr** stops the stream collector, starts the batch
+collector, and returns to the view pages.
+
 ## Firmware default intervals
 
 The band firmware records these metrics at the following default intervals:
@@ -129,6 +136,8 @@ need an SPA fallback route.
 | `GET`  | `/api/battery`           | Latest battery percentage, timestamp and mode    |
 | `GET`  | `/api/monitor`           | Current monitor interval and schedule status     |
 | `POST` | `/api/monitor/interval`  | Select `?value=stream` or `?value=2h`             |
+| `GET`  | `/api/live/latest`       | Latest `j2208.live` reading, or 204 when empty    |
+| `GET`  | `/api/live/stream`       | SSE stream of new live readings                  |
 | `GET`  | `/q/health`              | Quarkus/Agroal health check                      |
 
 Query parameters for `/api/views/{name}`:
