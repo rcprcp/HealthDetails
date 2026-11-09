@@ -27,6 +27,7 @@ export interface ChartSpec {
   yMax: number | null;
   yMinPadding: number | null;
   yPadding: number | null;
+  pulsePressure: boolean;
 }
 
 export interface ViewSummary {

@@ -154,6 +154,16 @@ export function buildChartPoints(data: TableData): ChartPoint[] {
 
   const points = rawPoints.map((point) => ({ ...point }));
 
+  if (chart.pulsePressure) {
+    for (const point of points) {
+      const systolic = point.bp_sys;
+      const diastolic = point.bp_dia;
+      if (typeof systolic === 'number' && typeof diastolic === 'number') {
+        point.pulse_pressure = systolic - diastolic;
+      }
+    }
+  }
+
   for (const series of chart.series) {
     const values = rawPoints
       .map((point) => point[series.key])

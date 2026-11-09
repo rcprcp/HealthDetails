@@ -21,7 +21,7 @@ class TableCatalogTest {
         List<String> names = catalog.all().stream().map(TableDefinition::name).toList();
 
         assertEquals(
-                List.of("v_hr", "v_spo2", "v_hrv", "v_temp", "v_steps", "v_sleep"),
+                List.of("v_hr", "v_spo2", "v_hrv", "v_bp", "v_temp", "v_steps", "v_sleep"),
                 names);
     }
 
@@ -33,7 +33,7 @@ class TableCatalogTest {
                 .collect(Collectors.toSet());
 
         assertEquals(
-                Set.of("v_hr", "v_spo2", "v_hrv", "v_temp", "v_steps", "v_sleep"),
+                Set.of("v_hr", "v_spo2", "v_hrv", "v_bp", "v_temp", "v_steps", "v_sleep"),
                 charted);
     }
 
@@ -54,6 +54,18 @@ class TableCatalogTest {
         assertEquals("hrv", hrv.chart().series().getFirst().key());
         assertTrue(hrv.chart().averageLine());
         assertEquals(5, hrv.chart().movingAveragePeriod());
+
+        TableDefinition bloodPressure = catalog.require("v_bp");
+        assertEquals("device_time", bloodPressure.chart().xKey());
+        assertEquals(
+                List.of("bp_sys", "bp_dia"),
+                bloodPressure.chart().series().stream().map(ChartSeries::key).toList());
+        assertTrue(bloodPressure.chart().averageLine());
+        assertEquals(0, bloodPressure.chart().movingAveragePeriod());
+        assertTrue(bloodPressure.chart().pulsePressure());
+        assertEquals("v_hrv", bloodPressure.relation());
+        assertTrue(bloodPressure.projection().contains("pulse_pressure"));
+        assertEquals("bp_sys > 0 AND bp_dia > 0", bloodPressure.filter());
 
         TableDefinition temperature = catalog.require("v_temp");
         assertEquals("device_time", temperature.chart().xKey());

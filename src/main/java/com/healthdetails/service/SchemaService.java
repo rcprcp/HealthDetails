@@ -48,14 +48,16 @@ public class SchemaService {
         TableDefinition definition = catalog.require(name);
         int limit = Math.min(MAX_LIMIT, Math.max(1, requestedLimit));
         int offset = Math.max(0, requestedOffset);
-        String relation = SqlIdentifiers.quote(schema) + "." + SqlIdentifiers.quote(definition.name());
-        String sql = "SELECT * FROM " + relation
+        String relation = SqlIdentifiers.quote(schema) + "." + SqlIdentifiers.quote(definition.relation());
+        String from = relation
+                + (definition.filter().isBlank() ? "" : " WHERE " + definition.filter());
+        String sql = "SELECT " + definition.projection() + " FROM " + from
                 + " ORDER BY " + SqlIdentifiers.quote(definition.sortColumn())
                 + (definition.descending() ? " DESC" : " ASC")
                 + " NULLS LAST LIMIT ? OFFSET ?";
 
         try (Connection connection = dataSource.getConnection()) {
-            long total = count(connection, relation);
+            long total = count(connection, from);
             try (PreparedStatement statement = connection.prepareStatement(sql)) {
                 statement.setInt(1, limit);
                 statement.setInt(2, offset);
@@ -204,9 +206,9 @@ public class SchemaService {
         return value == null ? null : ((Number) value).intValue();
     }
 
-    private static long count(Connection connection, String relation) throws SQLException {
+    private static long count(Connection connection, String from) throws SQLException {
         try (Statement statement = connection.createStatement();
-             ResultSet resultSet = statement.executeQuery("SELECT count(*) FROM " + relation)) {
+             ResultSet resultSet = statement.executeQuery("SELECT count(*) FROM " + from)) {
             resultSet.next();
             return resultSet.getLong(1);
         }

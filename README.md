@@ -11,17 +11,21 @@ project the useful fields:
 | `v_hr`     | Heartrate    | `payload->>'value'` for `type = 'hr'`               |
 | `v_spo2`   | SpO2         | `payload->>'value'` for `type = 'spo2_auto'`        |
 | `v_hrv`    | HRV          | `hrv`, `hr`, `stress`, `bp_sys`, `bp_dia`           |
+| `v_bp`     | Blood Pressure | `bp_sys`, `bp_dia`, `pulse_pressure` from `type = 'hrv'` |
 | `v_temp`   | Temperature  | `payload->>'value'` for `type = 'temp_axil'`        |
 | `v_steps`  | Steps        | step count, calories, distance, step series         |
 | `v_sleep`  | Sleep        | deep/light/rem/awake totals and stage series        |
 
-`v_hr`, `v_spo2`, `v_hrv`, `v_temp`, `v_steps` and `v_sleep` render a chart
-above the table. Every view renders a paginated table with the same fetched
-rows. The Steps chart is cumulative: steps accumulate on the left axis and
-calories on the right axis. The Sleep chart is a hypnogram-style step chart
-built from the per-minute `stages` array, so the line changes level when a
-deep, light, REM or awake phase starts or ends. The Heartrate, SpO2, HRV and
-Temperature charts overlay an overall-average line and a 5-period moving
+`v_hr`, `v_spo2`, `v_hrv`, `v_bp`, `v_temp`, `v_steps` and `v_sleep` render a
+chart above the table. Every view renders a paginated table with the same
+fetched rows. The Blood Pressure chart plots systolic and diastolic in
+different colors, overlays an overall-average line for each, and its tooltip
+shows the pulse pressure (systolic − diastolic). Its table also exposes a
+`pulse_pressure` column. The Steps chart is cumulative: steps accumulate on the
+left axis and calories on the right axis. The Sleep chart is a hypnogram-style
+step chart built from the per-minute `stages` array, so the line changes level
+when a deep, light, REM or awake phase starts or ends. The Heartrate, SpO2, HRV
+and Temperature charts overlay an overall-average line and a 5-period moving
 average.
 
 The header shows the total `distance_km` for the Steps view, plus the latest
@@ -45,10 +49,11 @@ real commands once the collector project exposes stable entrypoints.
 
 Selecting **Stream** opens the live dashboard at `/#/live`. Quarkus polls
 `j2208.live` every 250 ms and pushes new readings to the browser over
-server-sent events. While streaming is selected, the six history tabs are
-grayed out and disabled; selecting **2 hr** re-enables them. The dashboard shows heart rate, SpO2, systolic and
-diastolic pressure in large type, each with the timestamp of its value, plus a
-newest-first table of arriving readings with their age. A zero reading never
+server-sent events. While streaming is selected, the history tabs are
+grayed out and disabled; selecting **2 hr** re-enables them. The dashboard shows
+heart rate, SpO2, systolic and diastolic pressure in large type, each with the
+timestamp of its value, plus a newest-first table of arriving readings with
+their age. A zero reading never
 replaces the last known value; the card keeps the previous number and its
 timestamp. `Live`, `Stale` and `Waiting for data` states show the stream health.
 Selecting **2 hr** stops the stream collector, starts the batch collector, and
@@ -135,7 +140,7 @@ need an SPA fallback route.
 
 | Method | Path                     | Description                                      |
 | ------ | ------------------------ | ------------------------------------------------ |
-| `GET`  | `/api/views`             | Banner metadata for the six views               |
+| `GET`  | `/api/views`             | Banner metadata for the seven views             |
 | `GET`  | `/api/views/{name}`      | Columns, rows, total count and chart spec        |
 | `GET`  | `/api/battery`           | Latest battery percentage, timestamp and mode    |
 | `GET`  | `/api/monitor`           | Current monitor interval and schedule status     |
@@ -167,7 +172,7 @@ database environment variables above.
 
 ## Safety notes
 
-- Only the six explicitly catalogued views can be queried; relation names are
+- Only the explicitly catalogued views can be queried; relation names are
   never taken directly from a request.
 - The application opens read-only `SELECT` statements.
 - `history.raw` is not exposed. The views only project the typed JSON fields.

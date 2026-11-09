@@ -11,6 +11,7 @@ import {
   XAxis,
   YAxis,
 } from 'recharts';
+import type { TooltipContentProps } from 'recharts';
 import { applyMovingAverage } from '../chart';
 import type { ChartPoint } from '../chart';
 import { formatAxisTime, formatDateTime } from '../format';
@@ -36,7 +37,7 @@ interface StageDatum {
   stageLabel: string;
 }
 
-function stageColor(color: string): string {
+function mantineColor(color: string): string {
   const [name, shade = '6'] = color.split('.');
   return `var(--mantine-color-${name}-${shade})`;
 }
@@ -131,7 +132,7 @@ function SleepStageChart({ chart, points }: { chart: ChartSpec; points: ChartPoi
             {data.map((entry) => (
               <Cell
                 key={`${entry.x}-${entry.stage}`}
-                fill={stageColor(stageByLevel.get(entry.stage)?.color ?? 'gray.6')}
+                fill={mantineColor(stageByLevel.get(entry.stage)?.color ?? 'gray.6')}
               />
             ))}
           </Bar>
@@ -144,7 +145,7 @@ function SleepStageChart({ chart, points }: { chart: ChartSpec; points: ChartPoi
             <Box
               w={10}
               h={10}
-              style={{ borderRadius: 2, backgroundColor: stageColor(stage.color) }}
+              style={{ borderRadius: 2, backgroundColor: mantineColor(stage.color) }}
             />
             <Text size="xs">{stage.label}</Text>
           </Group>
@@ -181,6 +182,55 @@ export function MetricChart({ data, points }: MetricChartProps) {
   if (!chart) {
     return null;
   }
+
+  const renderPulsePressureTooltip = ({ active, payload, label }: TooltipContentProps) => {
+    if (!active || !payload || payload.length === 0) {
+      return null;
+    }
+
+    const point = payload[0]?.payload as ChartPoint | undefined;
+    const pulsePressure =
+      typeof point?.pulse_pressure === 'number' ? point.pulse_pressure : undefined;
+
+    return (
+      <Paper withBorder p="xs" radius="sm" shadow="sm">
+        <Text size="xs" c="dimmed">
+          {formatDateTime(String(label))}
+        </Text>
+        {chart.series.map((item) => (
+          <Group key={item.key} justify="space-between" gap="lg" mt={4} wrap="nowrap">
+            <Group gap={6} wrap="nowrap">
+              <Box
+                w={8}
+                h={8}
+                style={{ borderRadius: '50%', backgroundColor: mantineColor(item.color) }}
+              />
+              <Text size="sm">{item.label}</Text>
+            </Group>
+            <Text size="sm" fw={600}>
+              {typeof point?.[item.key] === 'number' ? point[item.key] : '—'}
+              {item.unit ? ` ${item.unit}` : ''}
+            </Text>
+          </Group>
+        ))}
+        <Group
+          justify="space-between"
+          gap="lg"
+          mt="xs"
+          pt="xs"
+          wrap="nowrap"
+          style={{ borderTop: '1px solid var(--mantine-color-default-border)' }}
+        >
+          <Text size="sm" c="dimmed">
+            Pulse pressure
+          </Text>
+          <Text size="sm" fw={700}>
+            {pulsePressure !== undefined ? `${pulsePressure} mmHg` : '—'}
+          </Text>
+        </Group>
+      </Paper>
+    );
+  };
 
   if (points.length === 0) {
     return (
@@ -385,16 +435,20 @@ export function MetricChart({ data, points }: MetricChartProps) {
             height: 56,
             tickFormatter: (value: string) => formatAxisTime(value),
           }}
-          tooltipProps={{
-            labelFormatter: (value) => formatDateTime(String(value)),
-            formatter: (value) => {
-              if (isStageChart) {
-                const stage = chart.stages.find((item) => item.level === Number(value));
-                return stage?.label ?? String(value);
-              }
-              return value;
-            },
-          }}
+          tooltipProps={
+            chart.pulsePressure
+              ? { content: renderPulsePressureTooltip }
+              : {
+                  labelFormatter: (value) => formatDateTime(String(value)),
+                  formatter: (value) => {
+                    if (isStageChart) {
+                      const stage = chart.stages.find((item) => item.level === Number(value));
+                      return stage?.label ?? String(value);
+                    }
+                    return value;
+                  },
+                }
+          }
         />
       )}
 

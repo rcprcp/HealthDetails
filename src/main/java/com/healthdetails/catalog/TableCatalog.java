@@ -59,6 +59,25 @@ public class TableCatalog {
                             true,
                             5)),
             new TableDefinition(
+                    "v_bp",
+                    "Blood Pressure",
+                    "view",
+                    "Systolic and diastolic pressure decoded from history.payload (type = 'hrv'), with pulse pressure.",
+                    "device_time",
+                    true,
+                    new ChartSpec(
+                            "line",
+                            "device_time",
+                            List.of(
+                                    new ChartSeries("bp_sys", "Systolic", "red.6", "mmHg"),
+                                    new ChartSeries("bp_dia", "Diastolic", "blue.6", "mmHg")),
+                            true,
+                            0,
+                            true),
+                    "v_hrv",
+                    "device_time, bp_sys, bp_dia, (bp_sys - bp_dia) AS pulse_pressure",
+                    "bp_sys > 0 AND bp_dia > 0"),
+            new TableDefinition(
                     "v_temp",
                     "Temperature",
                     "view",
