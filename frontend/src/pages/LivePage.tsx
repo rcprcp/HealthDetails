@@ -11,7 +11,7 @@ import {
   Title,
 } from '@mantine/core';
 import { getLiveRecent, getLiveSnapshot } from '../api';
-import { formatDateTime, formatElapsed } from '../format';
+import { formatDateTime, formatElapsed, formatSecondsOld } from '../format';
 import type { LiveReading } from '../types';
 
 type LiveState = 'connecting' | 'live' | 'stale' | 'waiting';
@@ -272,7 +272,7 @@ export function LivePage() {
               </Text>
             </Group>
             <Text size="sm" c="dimmed" mt={6}>
-              {metric.ts ? formatDateTime(metric.ts) : 'No value yet'}
+              {metric.ts ? formatSecondsOld(metric.ts, now) : 'No value yet'}
             </Text>
           </Paper>
         ))}

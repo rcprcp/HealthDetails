@@ -51,6 +51,16 @@ export function formatDistance(km: number): string {
   return `${km.toLocaleString(undefined, { maximumFractionDigits: 2 })} km`;
 }
 
+export function formatSecondsOld(value: string, now: number): string {
+  const then = new Date(value).getTime();
+  if (Number.isNaN(then)) {
+    return '—';
+  }
+
+  const seconds = Math.max(0, Math.floor((now - then) / 1000));
+  return `${seconds}s old`;
+}
+
 export function formatElapsed(value: string, now: number): string {
   const then = new Date(value).getTime();
   if (Number.isNaN(then)) {
