@@ -18,9 +18,10 @@ project the useful fields:
 
 `v_hr`, `v_spo2`, `v_hrv`, `v_temp` and `v_sleep` render a chart above the
 table. Every view renders a paginated table with the same fetched rows. The
-Sleep chart plots deep, light, REM and awake minutes over time. The SpO2, HRV
-and Temperature charts overlay an overall-average line and a 5-period moving
-average.
+Sleep chart is a hypnogram-style step chart built from the per-minute `stages`
+array, so the line changes level when a deep, light, REM or awake phase starts
+or ends. The SpO2, HRV and Temperature charts overlay an overall-average line
+and a 5-period moving average.
 
 The header shows the latest `j2208.battery` percentage to the left of the
 schema badge. It refreshes every 60 seconds.

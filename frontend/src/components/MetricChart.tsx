@@ -41,27 +41,39 @@ export function MetricChart({ data, points }: MetricChartProps) {
     );
   }
 
+  const isStageChart = chart.stageKey !== null && chart.stages.length > 0;
   const singleSeries = chart.series.length === 1 ? chart.series[0] : null;
-  const chartTitle = singleSeries
-    ? `${singleSeries.label} over time`
-    : `${data.label} over time`;
+  const chartTitle = isStageChart
+    ? `${data.label} stages over time`
+    : singleSeries
+      ? `${singleSeries.label} over time`
+      : `${data.label} over time`;
   const units = [...new Set(chart.series.map((series) => series.unit).filter(Boolean))];
   const unitLabel = units.length === 1 ? units[0] : '';
-  const badgeText = singleSeries
-    ? `${singleSeries.label} (${singleSeries.unit})`
-    : `${data.label}${unitLabel ? ` (${unitLabel})` : ''}`;
-  const badgeColor = singleSeries ? singleSeries.color.split('.')[0] : 'gray';
+  const badgeText = isStageChart
+    ? `${data.label} stages`
+    : singleSeries
+      ? `${singleSeries.label} (${singleSeries.unit})`
+      : `${data.label}${unitLabel ? ` (${unitLabel})` : ''}`;
+  const badgeColor = isStageChart
+    ? 'teal'
+    : singleSeries
+      ? singleSeries.color.split('.')[0]
+      : 'gray';
 
-  const values = numericValues(
-    points,
-    chart.series.map((series) => series.key),
-  );
-  const minimum = Math.min(...values);
-  const maximum = Math.max(...values);
+  const values = isStageChart
+    ? []
+    : numericValues(
+        points,
+        chart.series.map((series) => series.key),
+      );
+  const minimum = values.length > 0 ? Math.min(...values) : 0;
+  const maximum = values.length > 0 ? Math.max(...values) : 0;
   const padding = Math.max(2, Math.round((maximum - minimum) * 0.1));
-  const average = singleSeries
-    ? (points[0]?.[`${singleSeries.key}_average`] as number | undefined)
-    : undefined;
+  const average =
+    !isStageChart && singleSeries
+      ? (points[0]?.[`${singleSeries.key}_average`] as number | undefined)
+      : undefined;
 
   const series: Series[] = chart.series.map((item) => ({
     name: item.key,
@@ -69,7 +81,7 @@ export function MetricChart({ data, points }: MetricChartProps) {
     color: item.color,
   }));
 
-  if (chart.averageLine) {
+  if (!isStageChart && chart.averageLine) {
     for (const item of chart.series) {
       series.push({
         name: `${item.key}_average`,
@@ -79,7 +91,7 @@ export function MetricChart({ data, points }: MetricChartProps) {
     }
   }
 
-  if (chart.movingAveragePeriod > 1) {
+  if (!isStageChart && chart.movingAveragePeriod > 1) {
     for (const item of chart.series) {
       series.push({
         name: `${item.key}_movingAverage`,
@@ -89,13 +101,26 @@ export function MetricChart({ data, points }: MetricChartProps) {
     }
   }
 
+  const stageLevels = chart.stages.map((stage) => stage.level);
+  const stageLabelByLevel = new Map(chart.stages.map((stage) => [stage.level, stage.label]));
+  const yAxisProps = isStageChart
+    ? {
+        domain: [0.5, Math.max(...stageLevels) + 0.5],
+        ticks: stageLevels,
+        width: 64,
+        tickFormatter: (value: number) => stageLabelByLevel.get(Number(value)) ?? '',
+      }
+    : { domain: [minimum - padding, maximum + padding], width: 48 };
+
+  const pointLabel = isStageChart ? 'stage-minutes' : 'points';
+
   return (
     <Paper withBorder p="lg" radius="md">
       <Group justify="space-between" align="flex-start" mb="md" gap="sm">
         <div>
           <Title order={4}>{chartTitle}</Title>
           <Text size="xs" c="dimmed">
-            {points.length.toLocaleString()} points from {data.name}, oldest to newest
+            {points.length.toLocaleString()} {pointLabel} from {data.name}, oldest to newest
             {average !== undefined
               ? ` · overall average ${average}${singleSeries?.unit ?? ''}`
               : ''}
@@ -111,11 +136,11 @@ export function MetricChart({ data, points }: MetricChartProps) {
         data={points}
         dataKey="x"
         series={series}
-        curveType="linear"
+        curveType={chart.type === 'step' ? 'stepAfter' : 'linear'}
         withDots={points.length <= 80}
-        withLegend={series.length > 1}
-        connectNulls
-        yAxisProps={{ domain: [minimum - padding, maximum + padding], width: 48 }}
+        withLegend={!isStageChart && series.length > 1}
+        connectNulls={!isStageChart}
+        yAxisProps={yAxisProps}
         xAxisProps={{
           minTickGap: 48,
           angle: -25,
@@ -125,6 +150,13 @@ export function MetricChart({ data, points }: MetricChartProps) {
         }}
         tooltipProps={{
           labelFormatter: (value) => formatDateTime(String(value)),
+          formatter: (value) => {
+            if (isStageChart) {
+              const stage = chart.stages.find((item) => item.level === Number(value));
+              return stage?.label ?? String(value);
+            }
+            return value;
+          },
         }}
       />
     </Paper>

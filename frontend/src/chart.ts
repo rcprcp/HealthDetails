@@ -1,8 +1,8 @@
-import type { TableData } from './types';
+import type { ChartSpec, TableData } from './types';
 
 export type ChartPoint = {
   x: string;
-} & Record<string, string | number | undefined>;
+} & Record<string, string | number | null | undefined>;
 
 function round(value: number): number {
   return Math.round(value * 100) / 100;
@@ -20,10 +20,100 @@ function mean(values: number[]): number {
   return round(values.reduce((sum, value) => sum + value, 0) / values.length);
 }
 
+function addMinutes(iso: string, minutes: number): string | null {
+  const date = new Date(iso);
+  if (Number.isNaN(date.getTime())) {
+    return null;
+  }
+
+  date.setMinutes(date.getMinutes() + minutes);
+  const pad = (value: number) => String(value).padStart(2, '0');
+
+  return [
+    `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())}`,
+    `${pad(date.getHours())}:${pad(date.getMinutes())}:${pad(date.getSeconds())}`,
+  ].join('T');
+}
+
+function parseStages(value: unknown): number[] {
+  if (Array.isArray(value)) {
+    return value.map(Number).filter((code) => Number.isFinite(code));
+  }
+
+  if (typeof value === 'string') {
+    try {
+      const parsed: unknown = JSON.parse(value);
+      return Array.isArray(parsed)
+        ? parsed.map(Number).filter((code) => Number.isFinite(code))
+        : [];
+    } catch {
+      return [];
+    }
+  }
+
+  return [];
+}
+
+function buildStagePoints(data: TableData, chart: ChartSpec): ChartPoint[] {
+  const stageKey = chart.stageKey;
+  if (!stageKey) {
+    return [];
+  }
+
+  const stageByCode = new Map(chart.stages.map((stage) => [stage.code, stage]));
+  const records = data.rows
+    .map((row) => ({
+      start: String(row[chart.xKey] ?? ''),
+      stages: parseStages(row[stageKey]),
+    }))
+    .filter((record) => record.start !== '' && record.stages.length > 0)
+    .sort((left, right) => left.start.localeCompare(right.start));
+
+  const pointsByTime = new Map<string, ChartPoint>();
+
+  records.forEach((record, recordIndex) => {
+    record.stages.forEach((code, minute) => {
+      const stage = stageByCode.get(code);
+      if (!stage) {
+        return;
+      }
+
+      const x = addMinutes(record.start, minute);
+      if (!x) {
+        return;
+      }
+
+      pointsByTime.set(x, { x, stage: stage.level, stageLabel: stage.label });
+    });
+
+    const lastCode = record.stages[record.stages.length - 1];
+    const lastStage = stageByCode.get(lastCode);
+    const end = addMinutes(record.start, record.stages.length);
+
+    if (lastStage && end) {
+      pointsByTime.set(end, { x: end, stage: lastStage.level, stageLabel: lastStage.label });
+    }
+
+    const next = records[recordIndex + 1];
+    if (next && end && next.start > end) {
+      const breakAt = addMinutes(end, 1);
+      if (breakAt && breakAt < next.start) {
+        pointsByTime.set(breakAt, { x: breakAt, stage: null });
+      }
+    }
+  });
+
+  return [...pointsByTime.values()].sort((left, right) => left.x.localeCompare(right.x));
+}
+
 export function buildChartPoints(data: TableData): ChartPoint[] {
   const chart = data.chart;
   if (!chart) {
     return [];
+  }
+
+  if (chart.stageKey) {
+    return buildStagePoints(data, chart);
   }
 
   const rawPoints = data.rows

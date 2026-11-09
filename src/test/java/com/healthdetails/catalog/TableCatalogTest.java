@@ -58,10 +58,16 @@ class TableCatalogTest {
         assertEquals(5, temperature.chart().movingAveragePeriod());
 
         TableDefinition sleep = catalog.require("v_sleep");
+        assertEquals("step", sleep.chart().type());
         assertEquals("device_time", sleep.chart().xKey());
+        assertEquals("stages", sleep.chart().stageKey());
+        assertEquals("stage", sleep.chart().series().getFirst().key());
         assertEquals(
-                List.of("deep_min", "light_min", "rem_min", "awake_min"),
-                sleep.chart().series().stream().map(ChartSeries::key).toList());
+                List.of(1, 2, 3, 5),
+                sleep.chart().stages().stream().map(ChartStage::code).toList());
+        assertEquals(
+                List.of("Deep", "Light", "REM", "Awake"),
+                sleep.chart().stages().stream().map(ChartStage::label).toList());
         assertFalse(sleep.chart().averageLine());
         assertEquals(0, sleep.chart().movingAveragePeriod());
 

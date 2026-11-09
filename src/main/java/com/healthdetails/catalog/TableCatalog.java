@@ -84,15 +84,17 @@ public class TableCatalog {
                     "device_time",
                     true,
                     new ChartSpec(
-                            "line",
+                            "step",
                             "device_time",
-                            List.of(
-                                    new ChartSeries("deep_min", "Deep", "indigo.8", "min"),
-                                    new ChartSeries("light_min", "Light", "cyan.5", "min"),
-                                    new ChartSeries("rem_min", "REM", "grape.6", "min"),
-                                    new ChartSeries("awake_min", "Awake", "orange.6", "min")),
+                            List.of(new ChartSeries("stage", "Sleep stage", "teal.6", "")),
                             false,
-                            0)),
+                            0,
+                            "stages",
+                            List.of(
+                                    new ChartStage(1, "Deep", 1, "indigo.8"),
+                                    new ChartStage(2, "Light", 2, "cyan.5"),
+                                    new ChartStage(3, "REM", 3, "grape.6"),
+                                    new ChartStage(5, "Awake", 4, "orange.6")))),
             new TableDefinition(
                     "v_total",
                     "Totals",

@@ -7,12 +7,21 @@ export interface ChartSeries {
   unit: string;
 }
 
+export interface ChartStage {
+  code: number;
+  label: string;
+  level: number;
+  color: string;
+}
+
 export interface ChartSpec {
-  type: 'line';
+  type: 'line' | 'step';
   xKey: string;
   series: ChartSeries[];
   averageLine: boolean;
   movingAveragePeriod: number;
+  stageKey: string | null;
+  stages: ChartStage[];
 }
 
 export interface ViewSummary {
