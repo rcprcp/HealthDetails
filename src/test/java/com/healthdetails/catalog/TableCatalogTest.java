@@ -88,7 +88,7 @@ class TableCatalogTest {
         assertFalse(sleep.chart().averageLine());
         assertEquals(0, sleep.chart().movingAveragePeriod());
 
-        assertFalse(heartrate.chart().averageLine());
+        assertTrue(heartrate.chart().averageLine());
         assertEquals(0, heartrate.chart().movingAveragePeriod());
         assertTrue(spo2.chart().averageLine());
         assertEquals(5, spo2.chart().movingAveragePeriod());

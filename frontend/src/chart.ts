@@ -169,21 +169,38 @@ export function buildChartPoints(data: TableData): ChartPoint[] {
         point[`${series.key}_average`] = average;
       }
     }
+  }
 
-    if (chart.movingAveragePeriod > 1) {
-      const period = chart.movingAveragePeriod;
-      for (let index = 0; index < points.length; index += 1) {
-        const window = rawPoints
-          .slice(Math.max(0, index - period + 1), index + 1)
-          .map((point) => point[series.key])
-          .filter((value): value is number => typeof value === 'number');
+  return points;
+}
 
-        if (window.length > 0) {
-          points[index][`${series.key}_movingAverage`] = mean(window);
-        }
+/**
+ * Recompute trailing moving averages for an explicit period. This lives outside
+ * buildChartPoints because the period is user-controlled in the chart UI.
+ */
+export function applyMovingAverage(
+  points: ChartPoint[],
+  chart: ChartSpec,
+  period: number,
+): ChartPoint[] {
+  if (period <= 1 || chart.stageKey) {
+    return points;
+  }
+
+  const result = points.map((point) => ({ ...point }));
+
+  for (const series of chart.series) {
+    for (let index = 0; index < result.length; index += 1) {
+      const window = points
+        .slice(Math.max(0, index - period + 1), index + 1)
+        .map((point) => point[series.key])
+        .filter((value): value is number => typeof value === 'number');
+
+      if (window.length > 0) {
+        result[index][`${series.key}_movingAverage`] = mean(window);
       }
     }
   }
 
-  return points;
+  return result;
 }

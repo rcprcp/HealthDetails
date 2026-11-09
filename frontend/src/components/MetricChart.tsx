@@ -1,5 +1,6 @@
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { LineChart } from '@mantine/charts';
-import { Badge, Box, Group, Paper, Text, Title } from '@mantine/core';
+import { Badge, Box, Group, Modal, Paper, Text, TextInput, Title } from '@mantine/core';
 import {
   Bar,
   BarChart as RechartsBarChart,
@@ -10,6 +11,7 @@ import {
   XAxis,
   YAxis,
 } from 'recharts';
+import { applyMovingAverage } from '../chart';
 import type { ChartPoint } from '../chart';
 import { formatAxisTime, formatDateTime } from '../format';
 import type { ChartSpec, TableData } from '../types';
@@ -154,6 +156,27 @@ function SleepStageChart({ chart, points }: { chart: ChartSpec; points: ChartPoi
 
 export function MetricChart({ data, points }: MetricChartProps) {
   const chart = data.chart;
+  const defaultPeriod =
+    chart && chart.movingAveragePeriod > 1
+      ? Math.min(chart.movingAveragePeriod, Math.max(1, points.length))
+      : 0;
+  const [movingAveragePeriod, setMovingAveragePeriod] = useState(defaultPeriod);
+  const [periodDraft, setPeriodDraft] = useState(String(defaultPeriod));
+  const [periodError, setPeriodError] = useState<string | null>(null);
+  const periodInputRef = useRef<HTMLInputElement>(null);
+
+  const displayPoints = useMemo(
+    () => (chart ? applyMovingAverage(points, chart, movingAveragePeriod) : points),
+    [points, chart, movingAveragePeriod],
+  );
+
+  useEffect(() => {
+    if (points.length > 0 && movingAveragePeriod > points.length) {
+      const next = Math.max(1, points.length);
+      setMovingAveragePeriod(next);
+      setPeriodDraft(String(next));
+    }
+  }, [points.length, movingAveragePeriod]);
 
   if (!chart) {
     return null;
@@ -207,7 +230,7 @@ export function MetricChart({ data, points }: MetricChartProps) {
   const values = isStageChart
     ? []
     : numericValues(
-        points,
+        displayPoints,
         chart.series.map((series) => series.key),
       );
   const minimum = values.length > 0 ? Math.min(...values) : 0;
@@ -218,7 +241,7 @@ export function MetricChart({ data, points }: MetricChartProps) {
   const domainMax = chart.yMax != null ? chart.yMax : maximum + padding;
   const average =
     !isStageChart && singleSeries
-      ? (points[0]?.[`${singleSeries.key}_average`] as number | undefined)
+      ? (displayPoints[0]?.[`${singleSeries.key}_average`] as number | undefined)
       : undefined;
 
   const series: Series[] = chart.series.map((item) => ({
@@ -238,11 +261,11 @@ export function MetricChart({ data, points }: MetricChartProps) {
     }
   }
 
-  if (!isStageChart && chart.movingAveragePeriod > 1) {
+  if (!isStageChart && chart.movingAveragePeriod > 1 && movingAveragePeriod > 1) {
     for (const item of chart.series) {
       series.push({
         name: `${item.key}_movingAverage`,
-        label: `${item.label} ${chart.movingAveragePeriod}-period moving average`,
+        label: `${item.label} ${movingAveragePeriod}-period moving average`,
         color: 'grape.6',
       });
     }
@@ -263,6 +286,25 @@ export function MetricChart({ data, points }: MetricChartProps) {
 
   const pointLabel = isStageChart ? 'stage-minutes' : 'points';
 
+  const supportsMovingAverage =
+    !isStageChart && chart.movingAveragePeriod > 1 && points.length > 1;
+
+  const applyPeriod = () => {
+    const parsed = Number(periodDraft);
+    if (!Number.isInteger(parsed) || parsed < 1) {
+      setPeriodError('Enter a whole number of at least 1.');
+      return;
+    }
+    if (parsed > points.length) {
+      setPeriodError(
+        `The moving average period (${parsed}) cannot exceed the number of points on this chart (${points.length.toLocaleString()}).`,
+      );
+      return;
+    }
+    setMovingAveragePeriod(parsed);
+    setPeriodDraft(String(parsed));
+  };
+
   return (
     <Paper withBorder p="lg" radius="md">
       <Group justify="space-between" align="flex-start" mb="md" gap="sm">
@@ -275,21 +317,43 @@ export function MetricChart({ data, points }: MetricChartProps) {
               : ''}
           </Text>
         </div>
-        <Badge variant="light" color={badgeColor}>
-          {badgeText}
-        </Badge>
+        <Group gap="sm" align="flex-end" justify="flex-end" wrap="wrap">
+          {supportsMovingAverage ? (
+            <TextInput
+              ref={periodInputRef}
+              label="Moving average"
+              description={`Periods (max ${points.length.toLocaleString()})`}
+              type="number"
+              min={1}
+              max={points.length}
+              value={periodDraft}
+              onChange={(event) => setPeriodDraft(event.currentTarget.value)}
+              onBlur={applyPeriod}
+              onKeyDown={(event) => {
+                if (event.key === 'Enter') {
+                  event.currentTarget.blur();
+                }
+              }}
+              size="xs"
+              w={150}
+            />
+          ) : null}
+          <Badge variant="light" color={badgeColor}>
+            {badgeText}
+          </Badge>
+        </Group>
       </Group>
 
       {isStageChart ? (
-        <SleepStageChart chart={chart} points={points} />
+        <SleepStageChart chart={chart} points={displayPoints} />
       ) : (
         <LineChart
           h={300}
-          data={points}
+          data={displayPoints}
           dataKey="x"
           series={series}
           curveType={chart.type === 'step' ? 'stepAfter' : 'linear'}
-          withDots={points.length <= 80}
+          withDots={displayPoints.length <= 80}
           withLegend={series.length > 1}
           connectNulls
           yAxisProps={yAxisProps}
@@ -316,6 +380,19 @@ export function MetricChart({ data, points }: MetricChartProps) {
           }}
         />
       )}
+
+      <Modal
+        opened={periodError !== null}
+        onClose={() => setPeriodError(null)}
+        title="Invalid moving average period"
+        centered
+        onExitTransitionEnd={() => {
+          periodInputRef.current?.focus();
+          periodInputRef.current?.select();
+        }}
+      >
+        <Text size="sm">{periodError}</Text>
+      </Modal>
     </Paper>
   );
 }

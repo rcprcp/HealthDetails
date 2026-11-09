@@ -27,7 +27,7 @@ public class TableCatalog {
                             "line",
                             "device_time",
                             List.of(new ChartSeries("bpm", "Heart rate", "red.6", "bpm")),
-                            false,
+                            true,
                             0)),
             new TableDefinition(
                     "v_spo2",
