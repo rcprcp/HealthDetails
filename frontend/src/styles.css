@@ -73,6 +73,14 @@ body {
   white-space: nowrap;
 }
 
+.monitor-controls {
+  flex: 0 0 auto;
+}
+
+.monitor-label {
+  white-space: nowrap;
+}
+
 .status-badges {
   flex: 0 0 auto;
 }
@@ -123,6 +131,10 @@ body {
 
   .brand-subtitle,
   .schema-badge {
+    display: none;
+  }
+
+  .monitor-label {
     display: none;
   }
 

@@ -112,15 +112,7 @@ public class TableCatalog {
                                     new ChartStage(1, "Deep", 1, "purple.6"),
                                     new ChartStage(2, "Light", 2, "blue.6"),
                                     new ChartStage(3, "REM", 3, "green.6"),
-                                    new ChartStage(5, "Awake", 4, "orange.6")))),
-            new TableDefinition(
-                    "v_total",
-                    "Totals",
-                    "view",
-                    "Daily activity totals decoded from history.payload (type = 'total').",
-                    "device_time",
-                    true,
-                    null)
+                                    new ChartStage(5, "Awake", 4, "orange.6"))))
     );
 
     private static final Map<String, TableDefinition> BY_NAME = index(DEFINITIONS);

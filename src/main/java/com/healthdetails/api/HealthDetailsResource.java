@@ -2,10 +2,13 @@ package com.healthdetails.api;
 
 import com.healthdetails.catalog.TableCatalog;
 import com.healthdetails.catalog.TableDefinition;
+import com.healthdetails.monitor.MonitorInterval;
+import com.healthdetails.monitor.MonitorService;
 import com.healthdetails.service.SchemaService;
 import jakarta.inject.Inject;
 import jakarta.ws.rs.DefaultValue;
 import jakarta.ws.rs.GET;
+import jakarta.ws.rs.POST;
 import jakarta.ws.rs.Path;
 import jakarta.ws.rs.PathParam;
 import jakarta.ws.rs.Produces;
@@ -24,6 +27,9 @@ public class HealthDetailsResource {
 
     @Inject
     SchemaService schemaService;
+
+    @Inject
+    MonitorService monitorService;
 
     @GET
     @Path("/views")
@@ -48,6 +54,18 @@ public class HealthDetailsResource {
             return Response.noContent().build();
         }
         return Response.ok(status).build();
+    }
+
+    @GET
+    @Path("/monitor")
+    public MonitorStatus monitor() {
+        return monitorService.status();
+    }
+
+    @POST
+    @Path("/monitor/interval")
+    public MonitorStatus setMonitorInterval(@QueryParam("value") String value) {
+        return monitorService.setInterval(MonitorInterval.fromValue(value));
     }
 
     public record ViewSummary(

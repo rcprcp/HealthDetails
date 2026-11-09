@@ -54,6 +54,16 @@ export interface HeaderStats {
   distanceKm: number | null;
 }
 
+export interface MonitorStatus {
+  interval: string | null;
+  label: string | null;
+  cron: string | null;
+  active: boolean;
+  lastRun: string | null;
+  nextRun: string | null;
+  message: string;
+}
+
 export interface TableData {
   name: string;
   label: string;

@@ -14,7 +14,6 @@ project the useful fields:
 | `v_temp`   | Temperature  | `payload->>'value'` for `type = 'temp_axil'`        |
 | `v_steps`  | Steps        | step count, calories, distance, step series         |
 | `v_sleep`  | Sleep        | deep/light/rem/awake totals and stage series        |
-| `v_total`  | Totals       | daily steps, distance, calories, active minutes     |
 
 `v_hr`, `v_spo2`, `v_hrv`, `v_temp`, `v_steps` and `v_sleep` render a chart
 above the table. Every view renders a paginated table with the same fetched
@@ -25,10 +24,15 @@ deep, light, REM or awake phase starts or ends. The Heartrate, SpO2, HRV and
 Temperature charts overlay an overall-average line and a 5-period moving
 average.
 
-The header shows the total `distance_km` for the active view when that view
-has a distance column (Steps and Totals), plus the latest `j2208.battery`
-percentage, immediately left of the schema badge. Battery refreshes every 60
-seconds.
+The header shows the total `distance_km` for the Steps view, plus the latest
+`j2208.battery` percentage, immediately left of the schema badge. Battery
+refreshes every 60 seconds.
+
+The header also has **1 min** and **2 hr** monitor buttons. Selecting one
+schedules a Quarkus cron job and immediately invokes the collector stub. The
+real Python collector entrypoint lives in the separate collector project, so
+`CollectorService` currently logs the intended invocation instead of launching
+a process.
 
 ## Requirements
 
@@ -100,9 +104,11 @@ need an SPA fallback route.
 
 | Method | Path                     | Description                                      |
 | ------ | ------------------------ | ------------------------------------------------ |
-| `GET`  | `/api/views`             | Banner metadata for the seven views              |
+| `GET`  | `/api/views`             | Banner metadata for the six views               |
 | `GET`  | `/api/views/{name}`      | Columns, rows, total count and chart spec        |
 | `GET`  | `/api/battery`           | Latest battery percentage, timestamp and mode    |
+| `GET`  | `/api/monitor`           | Current monitor interval and schedule status     |
+| `POST` | `/api/monitor/interval`  | Schedule the collector with `?value=1m` or `2h`  |
 | `GET`  | `/q/health`              | Quarkus/Agroal health check                      |
 
 Query parameters for `/api/views/{name}`:
@@ -126,7 +132,7 @@ database environment variables above.
 
 ## Safety notes
 
-- Only the seven explicitly catalogued views can be queried; relation names are
+- Only the six explicitly catalogued views can be queried; relation names are
   never taken directly from a request.
 - The application opens read-only `SELECT` statements.
 - `history.raw` is not exposed. The views only project the typed JSON fields.

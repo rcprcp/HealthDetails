@@ -51,7 +51,8 @@ export function ViewPage({ onSummary }: ViewPageProps) {
       return;
     }
 
-    const hasDistance = data.columns.some((column) => column.name === 'distance_km');
+    const hasDistance =
+      data.name === 'v_steps' && data.columns.some((column) => column.name === 'distance_km');
     const distanceKm = hasDistance
       ? data.rows.reduce((sum, row) => {
           const value = Number(row.distance_km);

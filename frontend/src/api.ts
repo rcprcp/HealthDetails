@@ -1,9 +1,13 @@
-import type { BatteryStatus, TableData, ViewSummary } from './types';
+import type { BatteryStatus, MonitorStatus, TableData, ViewSummary } from './types';
 
-async function request<T>(url: string, signal?: AbortSignal): Promise<T> {
+async function request<T>(url: string, signal?: AbortSignal, init?: RequestInit): Promise<T> {
   const response = await fetch(url, {
     signal,
-    headers: { Accept: 'application/json' },
+    ...init,
+    headers: {
+      Accept: 'application/json',
+      ...init?.headers,
+    },
   });
 
   if (!response.ok) {
@@ -43,4 +47,16 @@ export async function getBattery(signal?: AbortSignal): Promise<BatteryStatus | 
   }
 
   return (await response.json()) as BatteryStatus;
+}
+
+export function getMonitorStatus(signal?: AbortSignal): Promise<MonitorStatus> {
+  return request<MonitorStatus>('/api/monitor', signal);
+}
+
+export function setMonitorInterval(value: '1m' | '2h'): Promise<MonitorStatus> {
+  return request<MonitorStatus>(
+    `/api/monitor/interval?value=${encodeURIComponent(value)}`,
+    undefined,
+    { method: 'POST' },
+  );
 }

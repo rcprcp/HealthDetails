@@ -21,12 +21,12 @@ class TableCatalogTest {
         List<String> names = catalog.all().stream().map(TableDefinition::name).toList();
 
         assertEquals(
-                List.of("v_hr", "v_spo2", "v_hrv", "v_temp", "v_steps", "v_sleep", "v_total"),
+                List.of("v_hr", "v_spo2", "v_hrv", "v_temp", "v_steps", "v_sleep"),
                 names);
     }
 
     @Test
-    void allViewsExceptTotalsHaveCharts() {
+    void everyViewHasAChart() {
         Set<String> charted = catalog.all().stream()
                 .filter(TableDefinition::hasChart)
                 .map(TableDefinition::name)

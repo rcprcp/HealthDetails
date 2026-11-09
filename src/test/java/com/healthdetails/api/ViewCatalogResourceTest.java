@@ -11,12 +11,12 @@ import static org.hamcrest.Matchers.is;
 class ViewCatalogResourceTest {
 
     @Test
-    void listsTheSevenJsonBackedViews() {
+    void listsTheSixJsonBackedViews() {
         given()
                 .when().get("/api/views")
                 .then()
                 .statusCode(200)
-                .body("$", hasSize(7))
+                .body("$", hasSize(6))
                 .body("[0].name", is("v_hr"))
                 .body("[0].label", is("Heartrate"))
                 .body("[0].chart", is(true))
@@ -29,8 +29,7 @@ class ViewCatalogResourceTest {
                 .body("[4].name", is("v_steps"))
                 .body("[4].chart", is(true))
                 .body("[5].name", is("v_sleep"))
-                .body("[5].chart", is(true))
-                .body("[6].chart", is(false));
+                .body("[5].chart", is(true));
     }
 
     @Test

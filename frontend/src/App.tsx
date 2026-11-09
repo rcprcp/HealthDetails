@@ -14,12 +14,12 @@ import {
 } from '@mantine/core';
 import { useMediaQuery } from '@mantine/hooks';
 import { Link, Navigate, Route, Routes, useLocation } from 'react-router-dom';
-import { getBattery, getViews } from './api';
+import { getBattery, getMonitorStatus, getViews, setMonitorInterval } from './api';
 import { BatteryIcon } from './components/BatteryIcon';
 import { DistanceIcon } from './components/DistanceIcon';
 import { formatDateTime, formatDistance } from './format';
 import { ViewPage } from './pages/ViewPage';
-import type { BatteryStatus, HeaderStats, ViewSummary } from './types';
+import type { BatteryStatus, HeaderStats, MonitorStatus, ViewSummary } from './types';
 
 export function App() {
   const [views, setViews] = useState<ViewSummary[]>([]);
@@ -27,6 +27,9 @@ export function App() {
   const [attempt, setAttempt] = useState(0);
   const [battery, setBattery] = useState<BatteryStatus | null>(null);
   const [headerStats, setHeaderStats] = useState<HeaderStats | null>(null);
+  const [monitorStatus, setMonitorStatus] = useState<MonitorStatus | null>(null);
+  const [monitorPending, setMonitorPending] = useState<'1m' | '2h' | null>(null);
+  const [monitorError, setMonitorError] = useState<string | null>(null);
   const location = useLocation();
   const isMobile = useMediaQuery('(max-width: 48em)');
 
@@ -65,6 +68,28 @@ export function App() {
     };
   }, []);
 
+  useEffect(() => {
+    const controller = new AbortController();
+    getMonitorStatus(controller.signal)
+      .then(setMonitorStatus)
+      .catch(() => {
+        // The controls remain usable even if the initial status request fails.
+      });
+    return () => controller.abort();
+  }, []);
+
+  const changeMonitorInterval = async (value: '1m' | '2h') => {
+    setMonitorPending(value);
+    setMonitorError(null);
+    try {
+      setMonitorStatus(await setMonitorInterval(value));
+    } catch (cause: unknown) {
+      setMonitorError(cause instanceof Error ? cause.message : String(cause));
+    } finally {
+      setMonitorPending(null);
+    }
+  };
+
   return (
     <AppShell header={{ height: isMobile ? 104 : 76 }} padding="lg">
       <AppShell.Header className="app-header">
@@ -99,6 +124,47 @@ export function App() {
               ))}
             </Group>
           </nav>
+
+          <Group gap={6} wrap="nowrap" className="monitor-controls">
+            <Text
+              size="xs"
+              c="dimmed"
+              visibleFrom="md"
+              className="monitor-label"
+              title={monitorStatus?.message}
+            >
+              Monitor interval
+            </Text>
+            <Tooltip label="Fetch and store J2208 data every 1 minute" withArrow>
+              <Button
+                size="compact-xs"
+                variant={monitorStatus?.interval === '1m' ? 'filled' : 'default'}
+                color="teal"
+                loading={monitorPending === '1m'}
+                disabled={monitorPending !== null && monitorPending !== '1m'}
+                onClick={() => changeMonitorInterval('1m')}
+              >
+                1 min
+              </Button>
+            </Tooltip>
+            <Tooltip label="Fetch and store J2208 data every 2 hours" withArrow>
+              <Button
+                size="compact-xs"
+                variant={monitorStatus?.interval === '2h' ? 'filled' : 'default'}
+                color="teal"
+                loading={monitorPending === '2h'}
+                disabled={monitorPending !== null && monitorPending !== '2h'}
+                onClick={() => changeMonitorInterval('2h')}
+              >
+                2 hr
+              </Button>
+            </Tooltip>
+            {monitorError ? (
+              <Text size="xs" c="red" visibleFrom="lg" title={monitorError}>
+                Monitor error
+              </Text>
+            ) : null}
+          </Group>
 
           <Group gap="xs" wrap="nowrap" className="status-badges">
             <DistanceBadge stats={headerStats} />
