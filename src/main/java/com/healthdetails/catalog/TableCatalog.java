@@ -41,7 +41,10 @@ public class TableCatalog {
                             "device_time",
                             List.of(new ChartSeries("percent", "SpO2", "blue.6", "%")),
                             true,
-                            5)),
+                            5,
+                            false,
+                            100.0,
+                            2)),
             new TableDefinition(
                     "v_hrv",
                     "HRV",

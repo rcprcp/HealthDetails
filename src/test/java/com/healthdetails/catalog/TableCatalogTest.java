@@ -46,6 +46,8 @@ class TableCatalogTest {
         TableDefinition spo2 = catalog.require("v_spo2");
         assertEquals("device_time", spo2.chart().xKey());
         assertEquals("percent", spo2.chart().series().getFirst().key());
+        assertEquals(100.0, spo2.chart().yMax());
+        assertEquals(2, spo2.chart().yMinPadding());
 
         TableDefinition hrv = catalog.require("v_hrv");
         assertEquals("device_time", hrv.chart().xKey());

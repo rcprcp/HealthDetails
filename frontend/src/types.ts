@@ -24,6 +24,8 @@ export interface ChartSpec {
   stageKey: string | null;
   stages: ChartStage[];
   cumulative: boolean;
+  yMax: number | null;
+  yMinPadding: number | null;
 }
 
 export interface ViewSummary {

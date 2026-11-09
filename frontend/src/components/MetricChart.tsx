@@ -213,6 +213,9 @@ export function MetricChart({ data, points }: MetricChartProps) {
   const minimum = values.length > 0 ? Math.min(...values) : 0;
   const maximum = values.length > 0 ? Math.max(...values) : 0;
   const padding = Math.max(2, Math.round((maximum - minimum) * 0.1));
+  const domainMin =
+    chart.yMinPadding != null ? Math.max(0, minimum - chart.yMinPadding) : minimum - padding;
+  const domainMax = chart.yMax != null ? chart.yMax : maximum + padding;
   const average =
     !isStageChart && singleSeries
       ? (points[0]?.[`${singleSeries.key}_average`] as number | undefined)
@@ -256,7 +259,7 @@ export function MetricChart({ data, points }: MetricChartProps) {
       }
     : hasRightAxis
       ? { width: 64 }
-      : { domain: [minimum - padding, maximum + padding], width: 48 };
+      : { domain: [domainMin, domainMax], width: 48 };
 
   const pointLabel = isStageChart ? 'stage-minutes' : 'points';
 
