@@ -34,6 +34,17 @@ real Python collector entrypoint lives in the separate collector project, so
 `CollectorService` currently logs the intended invocation instead of launching
 a process.
 
+## Firmware default intervals
+
+The band firmware records these metrics at the following default intervals:
+
+| Metric      | Default interval |
+| ----------- | ---------------: |
+| HR          | 10 min           |
+| SpO2        | 30 min           |
+| Temperature | 5 min            |
+| HRV         | 60 min           |
+
 ## Requirements
 
 - Java 25
