@@ -137,6 +137,21 @@ export function buildChartPoints(data: TableData): ChartPoint[] {
     return [];
   }
 
+  if (chart.cumulative) {
+    const totals = new Map<string, number>();
+
+    for (const point of rawPoints) {
+      for (const series of chart.series) {
+        const value = point[series.key];
+        if (typeof value === 'number') {
+          const total = (totals.get(series.key) ?? 0) + value;
+          totals.set(series.key, total);
+          point[series.key] = total;
+        }
+      }
+    }
+  }
+
   const points = rawPoints.map((point) => ({ ...point }));
 
   for (const series of chart.series) {

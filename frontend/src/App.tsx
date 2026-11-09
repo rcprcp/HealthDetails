@@ -16,15 +16,17 @@ import { useMediaQuery } from '@mantine/hooks';
 import { Link, Navigate, Route, Routes, useLocation } from 'react-router-dom';
 import { getBattery, getViews } from './api';
 import { BatteryIcon } from './components/BatteryIcon';
-import { formatDateTime } from './format';
+import { DistanceIcon } from './components/DistanceIcon';
+import { formatDateTime, formatDistance } from './format';
 import { ViewPage } from './pages/ViewPage';
-import type { BatteryStatus, ViewSummary } from './types';
+import type { BatteryStatus, HeaderStats, ViewSummary } from './types';
 
 export function App() {
   const [views, setViews] = useState<ViewSummary[]>([]);
   const [error, setError] = useState<string | null>(null);
   const [attempt, setAttempt] = useState(0);
   const [battery, setBattery] = useState<BatteryStatus | null>(null);
+  const [headerStats, setHeaderStats] = useState<HeaderStats | null>(null);
   const location = useLocation();
   const isMobile = useMediaQuery('(max-width: 48em)');
 
@@ -99,6 +101,7 @@ export function App() {
           </nav>
 
           <Group gap="xs" wrap="nowrap" className="status-badges">
+            <DistanceBadge stats={headerStats} />
             <BatteryBadge battery={battery} />
             <Badge variant="light" color="teal" visibleFrom="md" className="schema-badge">
               schema <Code bg="transparent" c="teal">j2208</Code>
@@ -123,13 +126,33 @@ export function App() {
           ) : (
             <Routes>
               <Route path="/" element={<Navigate to="/view/v_hr" replace />} />
-              <Route path="/view/:name" element={<ViewPage />} />
+              <Route path="/view/:name" element={<ViewPage onSummary={setHeaderStats} />} />
               <Route path="*" element={<Navigate to="/view/v_hr" replace />} />
             </Routes>
           )}
         </Container>
       </AppShell.Main>
     </AppShell>
+  );
+}
+
+function DistanceBadge({ stats }: { stats: HeaderStats | null }) {
+  if (!stats || stats.distanceKm === null) {
+    return null;
+  }
+
+  return (
+    <Tooltip label={`Total distance for ${stats.label}`} withArrow>
+      <Badge
+        variant="light"
+        color="blue"
+        leftSection={<DistanceIcon />}
+        className="distance-badge"
+        tt="none"
+      >
+        {formatDistance(stats.distanceKm)}
+      </Badge>
+    </Tooltip>
   );
 }
 

@@ -8,6 +8,10 @@ public record ChartSeries(
         String key,
         String label,
         String color,
-        String unit
+        String unit,
+        String yAxisId
 ) {
+    public ChartSeries(String key, String label, String color, String unit) {
+        this(key, label, color, unit, null);
+    }
 }

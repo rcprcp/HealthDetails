@@ -5,9 +5,13 @@ import { getView } from '../api';
 import { buildChartPoints } from '../chart';
 import { DataTable } from '../components/DataTable';
 import { MetricChart } from '../components/MetricChart';
-import type { TableData } from '../types';
+import type { HeaderStats, TableData } from '../types';
 
-export function ViewPage() {
+interface ViewPageProps {
+  onSummary: (stats: HeaderStats | null) => void;
+}
+
+export function ViewPage({ onSummary }: ViewPageProps) {
   const { name = '' } = useParams<{ name: string }>();
   const [data, setData] = useState<TableData | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -40,6 +44,24 @@ export function ViewPage() {
   useEffect(() => {
     document.title = data ? `${data.label} · HealthDetails` : 'HealthDetails';
   }, [data]);
+
+  useEffect(() => {
+    if (!data) {
+      onSummary(null);
+      return;
+    }
+
+    const hasDistance = data.columns.some((column) => column.name === 'distance_km');
+    const distanceKm = hasDistance
+      ? data.rows.reduce((sum, row) => {
+          const value = Number(row.distance_km);
+          return Number.isFinite(value) ? sum + value : sum;
+        }, 0)
+      : null;
+
+    onSummary({ label: data.label, distanceKm });
+    return () => onSummary(null);
+  }, [data, onSummary]);
 
   const chartPoints = useMemo(() => (data ? buildChartPoints(data) : []), [data]);
 

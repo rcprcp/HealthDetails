@@ -75,7 +75,22 @@ public class TableCatalog {
                     "Step, calorie and distance buckets decoded from history.payload (type = 'steps').",
                     "device_time",
                     true,
-                    null),
+                    new ChartSpec(
+                            "line",
+                            "device_time",
+                            List.of(
+                                    new ChartSeries("steps", "Steps", "teal.6", ""),
+                                    new ChartSeries(
+                                            "calories_kcal",
+                                            "Calories",
+                                            "orange.6",
+                                            "kcal",
+                                            "right")),
+                            false,
+                            0,
+                            null,
+                            List.of(),
+                            true)),
             new TableDefinition(
                     "v_sleep",
                     "Sleep",

@@ -13,6 +13,7 @@ interface Series {
   name: string;
   label: string;
   color: string;
+  yAxisId?: 'left' | 'right';
 }
 
 function numericValues(points: ChartPoint[], keys: string[]): number[] {
@@ -43,23 +44,37 @@ export function MetricChart({ data, points }: MetricChartProps) {
 
   const isStageChart = chart.stageKey !== null && chart.stages.length > 0;
   const singleSeries = chart.series.length === 1 ? chart.series[0] : null;
+  const hasRightAxis = chart.series.some((series) => series.yAxisId === 'right');
+  const leftSeries = chart.series.find((series) => series.yAxisId !== 'right');
+  const rightSeries = chart.series.find((series) => series.yAxisId === 'right');
   const chartTitle = isStageChart
     ? `${data.label} stages over time`
-    : singleSeries
-      ? `${singleSeries.label} over time`
-      : `${data.label} over time`;
+    : chart.cumulative
+      ? `Cumulative ${data.label.toLowerCase()} over time`
+      : singleSeries
+        ? `${singleSeries.label} over time`
+        : `${data.label} over time`;
   const units = [...new Set(chart.series.map((series) => series.unit).filter(Boolean))];
   const unitLabel = units.length === 1 ? units[0] : '';
   const badgeText = isStageChart
     ? `${data.label} stages`
-    : singleSeries
-      ? `${singleSeries.label} (${singleSeries.unit})`
-      : `${data.label}${unitLabel ? ` (${unitLabel})` : ''}`;
-  const badgeColor = isStageChart
-    ? 'teal'
-    : singleSeries
-      ? singleSeries.color.split('.')[0]
-      : 'gray';
+    : chart.cumulative
+      ? 'Cumulative'
+      : singleSeries
+        ? `${singleSeries.label} (${singleSeries.unit})`
+        : `${data.label}${unitLabel ? ` (${unitLabel})` : ''}`;
+  const badgeColor =
+    isStageChart || chart.cumulative
+      ? 'teal'
+      : singleSeries
+        ? singleSeries.color.split('.')[0]
+        : 'gray';
+  const yAxisLabel = leftSeries
+    ? `${leftSeries.label}${leftSeries.unit ? ` (${leftSeries.unit})` : ''}`
+    : undefined;
+  const rightYAxisLabel = rightSeries
+    ? `${rightSeries.label}${rightSeries.unit ? ` (${rightSeries.unit})` : ''}`
+    : undefined;
 
   const values = isStageChart
     ? []
@@ -79,6 +94,7 @@ export function MetricChart({ data, points }: MetricChartProps) {
     name: item.key,
     label: item.unit ? `${item.label} (${item.unit})` : item.label,
     color: item.color,
+    ...(item.yAxisId ? { yAxisId: item.yAxisId } : {}),
   }));
 
   if (!isStageChart && chart.averageLine) {
@@ -110,7 +126,9 @@ export function MetricChart({ data, points }: MetricChartProps) {
         width: 64,
         tickFormatter: (value: number) => stageLabelByLevel.get(Number(value)) ?? '',
       }
-    : { domain: [minimum - padding, maximum + padding], width: 48 };
+    : hasRightAxis
+      ? { width: 64 }
+      : { domain: [minimum - padding, maximum + padding], width: 48 };
 
   const pointLabel = isStageChart ? 'stage-minutes' : 'points';
 
@@ -141,6 +159,10 @@ export function MetricChart({ data, points }: MetricChartProps) {
         withLegend={!isStageChart && series.length > 1}
         connectNulls={!isStageChart}
         yAxisProps={yAxisProps}
+        withRightYAxis={hasRightAxis}
+        yAxisLabel={yAxisLabel}
+        rightYAxisLabel={rightYAxisLabel}
+        rightYAxisProps={hasRightAxis ? { width: 64 } : undefined}
         xAxisProps={{
           minTickGap: 48,
           angle: -25,

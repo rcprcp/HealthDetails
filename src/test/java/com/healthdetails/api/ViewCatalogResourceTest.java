@@ -26,7 +26,8 @@ class ViewCatalogResourceTest {
                 .body("[2].chart", is(true))
                 .body("[3].name", is("v_temp"))
                 .body("[3].chart", is(true))
-                .body("[4].chart", is(false))
+                .body("[4].name", is("v_steps"))
+                .body("[4].chart", is(true))
                 .body("[5].name", is("v_sleep"))
                 .body("[5].chart", is(true))
                 .body("[6].chart", is(false));

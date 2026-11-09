@@ -26,13 +26,15 @@ class TableCatalogTest {
     }
 
     @Test
-    void heartrateSpo2HrvTemperatureAndSleepHaveCharts() {
+    void allViewsExceptTotalsHaveCharts() {
         Set<String> charted = catalog.all().stream()
                 .filter(TableDefinition::hasChart)
                 .map(TableDefinition::name)
                 .collect(Collectors.toSet());
 
-        assertEquals(Set.of("v_hr", "v_spo2", "v_hrv", "v_temp", "v_sleep"), charted);
+        assertEquals(
+                Set.of("v_hr", "v_spo2", "v_hrv", "v_temp", "v_steps", "v_sleep"),
+                charted);
     }
 
     @Test
@@ -56,6 +58,19 @@ class TableCatalogTest {
         assertEquals("temp_c", temperature.chart().series().getFirst().key());
         assertTrue(temperature.chart().averageLine());
         assertEquals(5, temperature.chart().movingAveragePeriod());
+
+        TableDefinition steps = catalog.require("v_steps");
+        assertEquals("line", steps.chart().type());
+        assertEquals("device_time", steps.chart().xKey());
+        assertTrue(steps.chart().cumulative());
+        assertEquals(
+                List.of("steps", "calories_kcal"),
+                steps.chart().series().stream().map(ChartSeries::key).toList());
+        assertEquals(
+                List.of("left", "right"),
+                steps.chart().series().stream()
+                        .map(series -> series.yAxisId() == null ? "left" : series.yAxisId())
+                        .toList());
 
         TableDefinition sleep = catalog.require("v_sleep");
         assertEquals("step", sleep.chart().type());

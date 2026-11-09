@@ -12,6 +12,7 @@ import java.util.List;
  * @param movingAveragePeriod  trailing moving-average window, or 0 to disable
  * @param stageKey             per-minute stage array column for hypnogram charts, or null
  * @param stages               stage-code mapping for hypnogram charts
+ * @param cumulative           accumulate each series over time
  */
 public record ChartSpec(
         String type,
@@ -20,7 +21,8 @@ public record ChartSpec(
         boolean averageLine,
         int movingAveragePeriod,
         String stageKey,
-        List<ChartStage> stages
+        List<ChartStage> stages,
+        boolean cumulative
 ) {
     public ChartSpec {
         series = List.copyOf(series);
@@ -33,6 +35,17 @@ public record ChartSpec(
             List<ChartSeries> series,
             boolean averageLine,
             int movingAveragePeriod) {
-        this(type, xKey, series, averageLine, movingAveragePeriod, null, List.of());
+        this(type, xKey, series, averageLine, movingAveragePeriod, null, List.of(), false);
+    }
+
+    public ChartSpec(
+            String type,
+            String xKey,
+            List<ChartSeries> series,
+            boolean averageLine,
+            int movingAveragePeriod,
+            String stageKey,
+            List<ChartStage> stages) {
+        this(type, xKey, series, averageLine, movingAveragePeriod, stageKey, stages, false);
     }
 }

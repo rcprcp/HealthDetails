@@ -46,3 +46,7 @@ export function formatCell(value: unknown): string {
 export function truncate(value: string, maxLength: number): string {
   return value.length <= maxLength ? value : `${value.slice(0, maxLength - 1)}…`;
 }
+
+export function formatDistance(km: number): string {
+  return `${km.toLocaleString(undefined, { maximumFractionDigits: 2 })} km`;
+}

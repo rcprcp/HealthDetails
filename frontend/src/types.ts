@@ -5,6 +5,7 @@ export interface ChartSeries {
   label: string;
   color: string;
   unit: string;
+  yAxisId: 'left' | 'right' | null;
 }
 
 export interface ChartStage {
@@ -22,6 +23,7 @@ export interface ChartSpec {
   movingAveragePeriod: number;
   stageKey: string | null;
   stages: ChartStage[];
+  cumulative: boolean;
 }
 
 export interface ViewSummary {
@@ -43,6 +45,11 @@ export interface BatteryStatus {
   percent: number;
   ts: string;
   mode: string;
+}
+
+export interface HeaderStats {
+  label: string;
+  distanceKm: number | null;
 }
 
 export interface TableData {

@@ -78,7 +78,8 @@ body {
 }
 
 .schema-badge,
-.battery-badge {
+.battery-badge,
+.distance-badge {
   flex: 0 0 auto;
 }
 
